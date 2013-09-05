@@ -36,7 +36,6 @@ class VersionMap
     req.on "response", (res) ->
       if 200 is res.statusCode
         console.log "Version updated at #{req.url}"
-        console.log versionMapJSON
         clearTimeout timeout
         callback null, versionMapJSON
       else
@@ -51,7 +50,7 @@ class VersionMap
         console.error "Error reading version map: #{environmentType}.json"
         callback err
       else if res.statusCode is 404
-        console.log "No such version map file available: #{environmentType}.json. Creating one now."
+        console.warn "No such version map file available: #{environmentType}.json. Creating one now."
         callback null, {}
       else if res.statusCode is 200
         res.on 'data', (chunk) ->

@@ -45,7 +45,6 @@
       req.on("response", function(res) {
         if (200 === res.statusCode) {
           console.log("Version updated at " + req.url);
-          console.log(versionMapJSON);
           clearTimeout(timeout);
           return callback(null, versionMapJSON);
         } else {
@@ -62,7 +61,7 @@
           console.error("Error reading version map: " + environmentType + ".json");
           callback(err);
         } else if (res.statusCode === 404) {
-          console.log("No such version map file available: " + environmentType + ".json. Creating one now.");
+          console.warn("No such version map file available: " + environmentType + ".json. Creating one now.");
           callback(null, {});
         } else if (res.statusCode === 200) {
           res.on('data', function(chunk) {

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "readmeFilename": "README.md",
   "description": "A utilitary for manipulating version maps.",
-  "main": "lib/versionMap.js",
+  "main": "libs/version-map.js",
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-coffee": "~0.7.0",
