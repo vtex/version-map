@@ -29,34 +29,49 @@ class VersionMap
     )
 
     # Let's not wait for more than 30 seconds to fail the build if there is no response to the upload request
-    timeout = setTimeout (->
+    timeoutMillis = 1000 * 30
+    timeoutCallback = ->
+      req.abort()
       callback new Error("Timeout exceeded when uploading version map at #{@versionMapFilePath(environmentType)}")
-    ), 1000 * 30
+        
+    req.setTimeout timeoutMillis, timeoutCallback
+
+    req.on "error", (err) ->
+      callback err
     
     req.on "response", (res) ->
       if 200 is res.statusCode
         console.log "Version updated at #{req.url}"
-        clearTimeout timeout
         callback null, versionMapJSON
       else
-        clearTimeout timeout
         callback new Error("Failed to upload version map at #{@versionMapFilePath(environmentType)}")
 
     req.end versionMapJSON
-    
+                
   downloadVersionMap: (environmentType, callback) =>
-    @s3Client.getFile @versionMapFilePath(environmentType), (err, res) ->
-      if err
-        console.error "Error reading version map: #{environmentType}.json"
-        callback err
-      else if res.statusCode is 404
+    req = @s3Client.get(@versionMapFilePath(environmentType))
+
+    # Let's not wait for more than 30 seconds to fail the build if there is no response to the download request
+    timeoutMillis = 1000 * 30
+    timeoutCallback = ->
+      req.abort()
+      callback new Error("Timeout exceeded when downloading version map at #{@versionMapFilePath(environmentType)}")
+
+    req.setTimeout timeoutMillis, timeoutCallback
+        
+    req.on "error", (err) ->
+      callback err
+            
+    req.on "response", (res) ->
+      if res.statusCode is 404
         console.warn "No such version map file available: #{environmentType}.json. Creating one now."
         callback null, {}
       else if res.statusCode is 200
         res.on 'data', (chunk) ->
           callback null, chunk
-      res.resume()
-  
+    
+    req.end()
+        
   updateVersion: (environmentType, productName, version, callback) =>
     @downloadVersionMap environmentType, (err, versionMapJSON) =>
       if err
@@ -68,5 +83,8 @@ class VersionMap
             callback err
           else 
             callback null, versionMap
-    
+            
+  listVersions: (productName, callback) =>
+    @s3Client.list {prefix: productName}, callback
+                
 module.exports = VersionMap 

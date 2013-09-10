@@ -5,9 +5,10 @@
   knox = require('knox');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.1.0';
+    VersionMap.prototype.version = '0.2.0';
 
     function VersionMap(options) {
+      this.listVersions = __bind(this.listVersions, this);
       this.updateVersion = __bind(this.updateVersion, this);
       this.downloadVersionMap = __bind(this.downloadVersionMap, this);
       this.uploadVersionMap = __bind(this.uploadVersionMap, this);
@@ -34,21 +35,25 @@
     };
 
     VersionMap.prototype.uploadVersionMap = function(environmentType, versionMapJSON, callback) {
-      var req, timeout;
+      var req, timeoutCallback, timeoutMillis;
       req = this.s3Client.put(this.versionMapFilePath(environmentType), {
         "Content-Length": versionMapJSON.length,
         "Content-Type": "application/json"
       });
-      timeout = setTimeout((function() {
+      timeoutMillis = 1000 * 30;
+      timeoutCallback = function() {
+        req.abort();
         return callback(new Error("Timeout exceeded when uploading version map at " + (this.versionMapFilePath(environmentType))));
-      }), 1000 * 30);
+      };
+      req.setTimeout(timeoutMillis, timeoutCallback);
+      req.on("error", function(err) {
+        return callback(err);
+      });
       req.on("response", function(res) {
         if (200 === res.statusCode) {
           console.log("Version updated at " + req.url);
-          clearTimeout(timeout);
           return callback(null, versionMapJSON);
         } else {
-          clearTimeout(timeout);
           return callback(new Error("Failed to upload version map at " + (this.versionMapFilePath(environmentType))));
         }
       });
@@ -56,20 +61,28 @@
     };
 
     VersionMap.prototype.downloadVersionMap = function(environmentType, callback) {
-      return this.s3Client.getFile(this.versionMapFilePath(environmentType), function(err, res) {
-        if (err) {
-          console.error("Error reading version map: " + environmentType + ".json");
-          callback(err);
-        } else if (res.statusCode === 404) {
+      var req, timeoutCallback, timeoutMillis;
+      req = this.s3Client.get(this.versionMapFilePath(environmentType));
+      timeoutMillis = 1000 * 30;
+      timeoutCallback = function() {
+        req.abort();
+        return callback(new Error("Timeout exceeded when downloading version map at " + (this.versionMapFilePath(environmentType))));
+      };
+      req.setTimeout(timeoutMillis, timeoutCallback);
+      req.on("error", function(err) {
+        return callback(err);
+      });
+      req.on("response", function(res) {
+        if (res.statusCode === 404) {
           console.warn("No such version map file available: " + environmentType + ".json. Creating one now.");
-          callback(null, {});
+          return callback(null, {});
         } else if (res.statusCode === 200) {
-          res.on('data', function(chunk) {
+          return res.on('data', function(chunk) {
             return callback(null, chunk);
           });
         }
-        return res.resume();
       });
+      return req.end();
     };
 
     VersionMap.prototype.updateVersion = function(environmentType, productName, version, callback) {
@@ -89,6 +102,12 @@
           });
         }
       });
+    };
+
+    VersionMap.prototype.listVersions = function(productName, callback) {
+      return this.s3Client.list({
+        prefix: productName
+      }, callback);
     };
 
     return VersionMap;
