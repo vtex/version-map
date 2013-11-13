@@ -1,6 +1,6 @@
 # Version Map
 
-Exposes an easy-to-use API for manipulating version maps in S3.
+Exposes an easy-to-use API for manipulating registry indexes in S3.
 
 ------
 

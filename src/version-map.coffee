@@ -1,4 +1,6 @@
 knox = require 'knox'
+Q = require 'q'
+_ = require 'underscore'
 
 class VersionMap
   version: 'VERSION_NUMBER'
@@ -10,21 +12,29 @@ class VersionMap
       key: @key
       secret: @secret
       bucket: @bucket
+    @registryIndexPath = "index.json"
+    @copiedPackageProperties = ['name', 'version', 'routes', 'description', 'main']
 
-  # Return a versionMap file path given the current environmentType. e.g. version/beta.json
-  versionMapFilePath: (environmentType) ->
-    "version/#{environmentType}.json"
+  # Uploads this registryIndex object on the appropriate path, updating this project's key to the current version
+  updateRegistryIndexJSON: (registryIndexJSON, packageJSON, tag) =>
+    registryIndexObj = JSON.parse(registryIndexJSON)
+    packageObj = JSON.parse(packageJSON)
+    # Create the object for this project if not available
+    registryIndexObj[packageObj.name] or= {}
+    registryIndexObj[packageObj.name].tags or= {}
+    registryIndexObj[packageObj.name].versions or= {}
 
-  # Uploads this versionMap object on the appropriate path, updating this project's key to the current version
-  updateVersionMapJSON: (versionMapJSON, productName, version) =>
-    # e.g. { vtex_deploy: "v00-02-00-beta-3" }
-    versionMapObj = JSON.parse(versionMapJSON)
-    versionMapObj[productName] = version
-    JSON.stringify(versionMapObj)
+    packageAtIndex = registryIndexObj[packageObj.name]
+    packageAtIndex.name = packageObj.name
+    packageAtIndex.tags[tag] = packageObj.version # e.g. "stable": "1.0.0"
+    packageAtIndex.versions[packageObj.version] = _.pick packageObj, @copiedPackageProperties...
 
-  uploadVersionMap: (environmentType, versionMapJSON, callback) =>
-    req = @s3Client.put(@versionMapFilePath(environmentType),
-      "Content-Length": versionMapJSON.length
+    return JSON.stringify(registryIndexObj)
+
+  uploadRegistryIndex: (registryIndexJSON) =>
+    deferred = Q.defer()
+    req = @s3Client.put(@registryIndexPath,
+      "Content-Length": registryIndexJSON.length
       "Content-Type": "application/json"
     )
 
@@ -32,59 +42,54 @@ class VersionMap
     timeoutMillis = 1000 * 30
     timeoutCallback = ->
       req.abort()
-      callback new Error("Timeout exceeded when uploading version map at #{@versionMapFilePath(environmentType)}")
-        
+      deferred.reject new Error("Timeout exceeded when uploading registry index at #{@registryIndexPath}")
+
     req.setTimeout timeoutMillis, timeoutCallback
 
     req.on "error", (err) ->
-      callback err
-    
+      deferred.reject new Error(err)
+
     req.on "response", (res) ->
       if 200 is res.statusCode
         console.log "Version updated at #{req.url}"
-        callback null, versionMapJSON
+        deferred.resolve registryIndexJSON
       else
-        callback new Error("Failed to upload version map at #{@versionMapFilePath(environmentType)}")
+        deferred.reject new Error("Failed to upload registry index at #{@registryIndexPath}")
 
-    req.end versionMapJSON
-                
-  downloadVersionMap: (environmentType, callback) =>
-    req = @s3Client.get(@versionMapFilePath(environmentType))
+    req.end registryIndexJSON
+    return deferred.promise
+
+  downloadRegistryIndex: =>
+    deferred = Q.defer()
+    req = @s3Client.get(@registryIndexPath)
 
     # Let's not wait for more than 30 seconds to fail the build if there is no response to the download request
     timeoutMillis = 1000 * 30
     timeoutCallback = ->
       req.abort()
-      callback new Error("Timeout exceeded when downloading version map at #{@versionMapFilePath(environmentType)}")
+      deferred.reject new Error("Timeout exceeded when downloading registry index at #{@registryIndexPath}")
 
     req.setTimeout timeoutMillis, timeoutCallback
-        
+
     req.on "error", (err) ->
-      callback err
-            
+      deferred.reject err
+
     req.on "response", (res) ->
       if res.statusCode is 404
-        console.warn "No such version map file available: #{environmentType}.json. Creating one now."
-        callback null, {}
+        console.warn "No such registry index file available: #{@registryIndexPath}. Creating one now."
+        deferred.resolve "{}"
       else if res.statusCode is 200
         res.on 'data', (chunk) ->
-          callback null, chunk
-    
+          deferred.resolve chunk
+
     req.end()
-        
-  updateVersion: (environmentType, productName, version, callback) =>
-    @downloadVersionMap environmentType, (err, versionMapJSON) =>
-      if err
-        callback err
-      else
-        updatedVersionMapJSON = @updateVersionMapJSON(versionMapJSON, productName, version)
-        @uploadVersionMap environmentType, updatedVersionMapJSON, (err, versionMap) ->
-          if err
-            callback err
-          else 
-            callback null, versionMap
-            
-  listVersions: (productName, callback) =>
-    @s3Client.list {prefix: productName}, callback
-                
-module.exports = VersionMap 
+    return deferred.promise
+
+  updateVersion: (environmentType, packageJSON) =>
+    @downloadRegistryIndex().then (registryIndexJSON) =>
+      updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexJSON, packageJSON, environmentType)
+      @uploadRegistryIndex(updatedRegistryIndexJSON)
+    .fail (err) ->
+      console.err "Could not update registry index!", err
+
+module.exports = VersionMap

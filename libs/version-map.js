@@ -1,18 +1,22 @@
 (function() {
-  var VersionMap, knox,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var Q, VersionMap, knox, _,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __slice = [].slice;
 
   knox = require('knox');
 
+  Q = require('q');
+
+  _ = require('underscore');
+
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.2.0';
+    VersionMap.prototype.version = '0.3.0';
 
     function VersionMap(options) {
-      this.listVersions = __bind(this.listVersions, this);
       this.updateVersion = __bind(this.updateVersion, this);
-      this.downloadVersionMap = __bind(this.downloadVersionMap, this);
-      this.uploadVersionMap = __bind(this.uploadVersionMap, this);
-      this.updateVersionMapJSON = __bind(this.updateVersionMapJSON, this);
+      this.downloadRegistryIndex = __bind(this.downloadRegistryIndex, this);
+      this.uploadRegistryIndex = __bind(this.uploadRegistryIndex, this);
+      this.updateRegistryIndexJSON = __bind(this.updateRegistryIndexJSON, this);
       this.key = options.key;
       this.secret = options.secret;
       this.bucket = options.bucket;
@@ -21,93 +25,88 @@
         secret: this.secret,
         bucket: this.bucket
       });
+      this.registryIndexPath = "index.json";
+      this.copiedPackageProperties = ['name', 'version', 'routes', 'description', 'main'];
     }
 
-    VersionMap.prototype.versionMapFilePath = function(environmentType) {
-      return "version/" + environmentType + ".json";
+    VersionMap.prototype.updateRegistryIndexJSON = function(registryIndexJSON, packageJSON, tag) {
+      var packageAtIndex, packageObj, registryIndexObj, _base, _base1, _name;
+      registryIndexObj = JSON.parse(registryIndexJSON);
+      packageObj = JSON.parse(packageJSON);
+      registryIndexObj[_name = packageObj.name] || (registryIndexObj[_name] = {});
+      (_base = registryIndexObj[packageObj.name]).tags || (_base.tags = {});
+      (_base1 = registryIndexObj[packageObj.name]).versions || (_base1.versions = {});
+      packageAtIndex = registryIndexObj[packageObj.name];
+      packageAtIndex.name = packageObj.name;
+      packageAtIndex.tags[tag] = packageObj.version;
+      packageAtIndex.versions[packageObj.version] = _.pick.apply(_, [packageObj].concat(__slice.call(this.copiedPackageProperties)));
+      return JSON.stringify(registryIndexObj);
     };
 
-    VersionMap.prototype.updateVersionMapJSON = function(versionMapJSON, productName, version) {
-      var versionMapObj;
-      versionMapObj = JSON.parse(versionMapJSON);
-      versionMapObj[productName] = version;
-      return JSON.stringify(versionMapObj);
-    };
-
-    VersionMap.prototype.uploadVersionMap = function(environmentType, versionMapJSON, callback) {
-      var req, timeoutCallback, timeoutMillis;
-      req = this.s3Client.put(this.versionMapFilePath(environmentType), {
-        "Content-Length": versionMapJSON.length,
+    VersionMap.prototype.uploadRegistryIndex = function(registryIndexJSON) {
+      var deferred, req, timeoutCallback, timeoutMillis;
+      deferred = Q.defer();
+      req = this.s3Client.put(this.registryIndexPath, {
+        "Content-Length": registryIndexJSON.length,
         "Content-Type": "application/json"
       });
       timeoutMillis = 1000 * 30;
       timeoutCallback = function() {
         req.abort();
-        return callback(new Error("Timeout exceeded when uploading version map at " + (this.versionMapFilePath(environmentType))));
+        return deferred.reject(new Error("Timeout exceeded when uploading registry index at " + this.registryIndexPath));
       };
       req.setTimeout(timeoutMillis, timeoutCallback);
       req.on("error", function(err) {
-        return callback(err);
+        return deferred.reject(new Error(err));
       });
       req.on("response", function(res) {
         if (200 === res.statusCode) {
           console.log("Version updated at " + req.url);
-          return callback(null, versionMapJSON);
+          return deferred.resolve(registryIndexJSON);
         } else {
-          return callback(new Error("Failed to upload version map at " + (this.versionMapFilePath(environmentType))));
+          return deferred.reject(new Error("Failed to upload registry index at " + this.registryIndexPath));
         }
       });
-      return req.end(versionMapJSON);
+      req.end(registryIndexJSON);
+      return deferred.promise;
     };
 
-    VersionMap.prototype.downloadVersionMap = function(environmentType, callback) {
-      var req, timeoutCallback, timeoutMillis;
-      req = this.s3Client.get(this.versionMapFilePath(environmentType));
+    VersionMap.prototype.downloadRegistryIndex = function() {
+      var deferred, req, timeoutCallback, timeoutMillis;
+      deferred = Q.defer();
+      req = this.s3Client.get(this.registryIndexPath);
       timeoutMillis = 1000 * 30;
       timeoutCallback = function() {
         req.abort();
-        return callback(new Error("Timeout exceeded when downloading version map at " + (this.versionMapFilePath(environmentType))));
+        return deferred.reject(new Error("Timeout exceeded when downloading registry index at " + this.registryIndexPath));
       };
       req.setTimeout(timeoutMillis, timeoutCallback);
       req.on("error", function(err) {
-        return callback(err);
+        return deferred.reject(err);
       });
       req.on("response", function(res) {
         if (res.statusCode === 404) {
-          console.warn("No such version map file available: " + environmentType + ".json. Creating one now.");
-          return callback(null, {});
+          console.warn("No such registry index file available: " + this.registryIndexPath + ". Creating one now.");
+          return deferred.resolve("{}");
         } else if (res.statusCode === 200) {
           return res.on('data', function(chunk) {
-            return callback(null, chunk);
+            return deferred.resolve(chunk);
           });
         }
       });
-      return req.end();
+      req.end();
+      return deferred.promise;
     };
 
-    VersionMap.prototype.updateVersion = function(environmentType, productName, version, callback) {
+    VersionMap.prototype.updateVersion = function(environmentType, packageJSON) {
       var _this = this;
-      return this.downloadVersionMap(environmentType, function(err, versionMapJSON) {
-        var updatedVersionMapJSON;
-        if (err) {
-          return callback(err);
-        } else {
-          updatedVersionMapJSON = _this.updateVersionMapJSON(versionMapJSON, productName, version);
-          return _this.uploadVersionMap(environmentType, updatedVersionMapJSON, function(err, versionMap) {
-            if (err) {
-              return callback(err);
-            } else {
-              return callback(null, versionMap);
-            }
-          });
-        }
+      return this.downloadRegistryIndex().then(function(registryIndexJSON) {
+        var updatedRegistryIndexJSON;
+        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexJSON, packageJSON, environmentType);
+        return _this.uploadRegistryIndex(updatedRegistryIndexJSON);
+      }).fail(function(err) {
+        return console.err("Could not update registry index!", err);
       });
-    };
-
-    VersionMap.prototype.listVersions = function(productName, callback) {
-      return this.s3Client.list({
-        prefix: productName
-      }, callback);
     };
 
     return VersionMap;
