@@ -13,7 +13,6 @@ class VersionMap
       secret: @secret
       bucket: @bucket
     @registryIndexPath = "index.json"
-    @copiedPackageProperties = ['name', 'version', 'routes', 'description', 'main']
 
   # Uploads this registryIndex object on the appropriate path, updating this project's key to the current version
   updateRegistryIndexJSON: (registryIndexJSON, packageJSON, tag) =>
@@ -26,8 +25,12 @@ class VersionMap
 
     packageAtIndex = registryIndexObj[packageObj.name]
     packageAtIndex.name = packageObj.name
+    packageAtIndex.paths = packageObj.paths
+    packageAtIndex.hosts = packageObj.hosts
+    packageAtIndex.main = packageObj.main
     packageAtIndex.tags[tag] = packageObj.version # e.g. "stable": "1.0.0"
-    packageAtIndex.versions[packageObj.version] = _.pick packageObj, @copiedPackageProperties...
+    packageAtIndex.versions[packageObj.version] = {}
+    packageAtIndex.versions[packageObj.version].created = new Date()
 
     return JSON.stringify(registryIndexObj)
 
