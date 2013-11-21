@@ -1,7 +1,6 @@
 (function() {
   var Q, VersionMap, knox, _,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __slice = [].slice;
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   knox = require('knox');
 
@@ -10,7 +9,7 @@
   _ = require('underscore');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.3.0';
+    VersionMap.prototype.version = '0.4.0';
 
     function VersionMap(options) {
       this.updateVersion = __bind(this.updateVersion, this);
@@ -26,7 +25,6 @@
         bucket: this.bucket
       });
       this.registryIndexPath = "index.json";
-      this.copiedPackageProperties = ['name', 'version', 'routes', 'description', 'main'];
     }
 
     VersionMap.prototype.updateRegistryIndexJSON = function(registryIndexJSON, packageJSON, tag) {
@@ -38,8 +36,12 @@
       (_base1 = registryIndexObj[packageObj.name]).versions || (_base1.versions = {});
       packageAtIndex = registryIndexObj[packageObj.name];
       packageAtIndex.name = packageObj.name;
+      packageAtIndex.paths = packageObj.paths;
+      packageAtIndex.hosts = packageObj.hosts;
+      packageAtIndex.main = packageObj.main;
       packageAtIndex.tags[tag] = packageObj.version;
-      packageAtIndex.versions[packageObj.version] = _.pick.apply(_, [packageObj].concat(__slice.call(this.copiedPackageProperties)));
+      packageAtIndex.versions[packageObj.version] = {};
+      packageAtIndex.versions[packageObj.version].created = new Date();
       return JSON.stringify(registryIndexObj);
     };
 

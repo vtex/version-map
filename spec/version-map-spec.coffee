@@ -10,7 +10,12 @@ vmap = new VersionMap(options)
 packageJSON = JSON.stringify({
   name: "test"
   version: "1.0.2"
-  routes: ["/admin/test", "/admin/new", "/admin/newest"]
+  paths: ["/admin/test",
+          "/admin/new",
+          "/admin/newest"]
+  hosts: ["vtexcommerce.com.br",
+          "vtexcommercebeta.com.br",
+          "vtexlocal.com.br"]
   description: "a test package that works"
 })
 
@@ -21,18 +26,17 @@ registryIndexJSON = JSON.stringify({
       stable: "1.0.0"
       beta: "1.0.1"
     }
+    paths: ["/admin/test",
+            "/admin/new"]
+    hosts: ["vtexcommerce.com.br",
+            "vtexcommercebeta.com.br",
+            "vtexlocal.com.br"]
     versions: {
       "1.0.0": {
-        name: "test"
-        version: "1.0.0"
-        routes: ["/admin/test"]
-        description: "a test package with a long description"
+        created: "2013-11-21T17:28:23.577Z"
       }
       "1.0.1": {
-        name: "test"
-        version: "1.0.1"
-        routes: ["/admin/test", "/admin/new"]
-        description: "a test package"
+        created: "2013-11-21T17:42:23.577Z"
       }
     }
   }
@@ -54,8 +58,10 @@ describe 'VersionMap', ->
   it 'should update a registryIndex JSON correctly', ->
     updatedVersionMapJSON = vmap.updateRegistryIndexJSON(registryIndexJSON, packageJSON, 'beta')
     registryIndex = JSON.parse updatedVersionMapJSON
+    expect(registryIndex.test.paths).toEqual(JSON.parse(packageJSON).paths)
+    expect(registryIndex.test.hosts).toEqual(JSON.parse(packageJSON).hosts)
     expect(registryIndex.test.versions["1.0.2"]).toBeDefined()
-    expect(registryIndex.test.versions["1.0.2"].description).toBe("a test package that works")
+    expect(registryIndex.test.versions["1.0.2"].created).toBeDefined()
     expect(registryIndex.test.tags.beta).toBe("1.0.2")
 
   it 'should call upload and download with appropriate values', ->
