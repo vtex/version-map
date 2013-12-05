@@ -62,6 +62,9 @@ class VersionMap
     req.end registryIndexJSON
     return deferred.promise
 
+  ###
+  Returns a buffer with the index contents. You should JSON.parse() it.
+  ###
   downloadRegistryIndex: =>
     deferred = Q.defer()
     req = @s3Client.get(@registryIndexPath)
@@ -88,9 +91,29 @@ class VersionMap
     req.end()
     return deferred.promise
 
+  getRegistryJSON: =>
+    @downloadRegistryIndex().then (registryIndexBuffer) -> JSON.parse registryIndexBuffer
+
+  getRegistryAsArray: =>
+    @getRegistryJSON().then (registryMap) => @registryMapToArray(registryMap)
+
+  ###
+  Convert a registryMap to an array of products
+  ###
+  registryMapToArray: (registry) =>
+    _.chain(registry)
+      # Create an array with each product's object value
+      .map((project) -> project)
+      # Sort By most recent version in each project, and insert this information in the project object
+      .sortBy((project) -> project.mostRecentVersionDate = (_.max(project.versions, (version) ->  new Date(version.created)).created))
+      # Extract value from chain
+      .value()
+      # Sort by gives us ascending order, we need descending
+      .reverse()
+
   updateVersion: (environmentType, packageJSON) =>
-    @downloadRegistryIndex().then (registryIndexJSON) =>
-      updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexJSON, packageJSON, environmentType)
+    @downloadRegistryIndex().then (registryIndexBuffer) =>
+      updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexBuffer, packageJSON, environmentType)
       @uploadRegistryIndex(updatedRegistryIndexJSON)
     .fail (err) ->
       console.err "Could not update registry index!", err

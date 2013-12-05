@@ -76,3 +76,9 @@ describe 'VersionMap', ->
       expect(vmap.downloadRegistryIndex).toHaveBeenCalled()
       expect(vmap.uploadRegistryIndex).toHaveBeenCalledWith([registryIndexJSON])
       expect(response).toBe(registryIndexJSON)
+
+  it 'should transform a registry map to array', ->
+    registryArray = vmap.registryMapToArray(JSON.parse(registryIndexJSON))
+    expect(registryArray.length).toBe(1)
+    expect(registryArray[0].name).toBe("test")
+    expect(registryArray[0].mostRecentVersionDate).toBe("2013-11-21T17:42:23.577Z")

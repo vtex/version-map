@@ -13,6 +13,9 @@
 
     function VersionMap(options) {
       this.updateVersion = __bind(this.updateVersion, this);
+      this.registryMapToArray = __bind(this.registryMapToArray, this);
+      this.getRegistryAsArray = __bind(this.getRegistryAsArray, this);
+      this.getRegistryJSON = __bind(this.getRegistryJSON, this);
       this.downloadRegistryIndex = __bind(this.downloadRegistryIndex, this);
       this.uploadRegistryIndex = __bind(this.uploadRegistryIndex, this);
       this.updateRegistryIndexJSON = __bind(this.updateRegistryIndexJSON, this);
@@ -73,6 +76,11 @@
       return deferred.promise;
     };
 
+    /*
+    Returns a buffer with the index contents. You should JSON.parse() it.
+    */
+
+
     VersionMap.prototype.downloadRegistryIndex = function() {
       var deferred, req, timeoutCallback, timeoutMillis;
       deferred = Q.defer();
@@ -100,11 +108,39 @@
       return deferred.promise;
     };
 
+    VersionMap.prototype.getRegistryJSON = function() {
+      return this.downloadRegistryIndex().then(function(registryIndexBuffer) {
+        return JSON.parse(registryIndexBuffer);
+      });
+    };
+
+    VersionMap.prototype.getRegistryAsArray = function() {
+      var _this = this;
+      return this.getRegistryJSON().then(function(registryMap) {
+        return _this.registryMapToArray(registryMap);
+      });
+    };
+
+    /*
+    Convert a registryMap to an array of products
+    */
+
+
+    VersionMap.prototype.registryMapToArray = function(registry) {
+      return _.chain(registry).map(function(project) {
+        return project;
+      }).sortBy(function(project) {
+        return project.mostRecentVersionDate = (_.max(project.versions, function(version) {
+          return new Date(version.created);
+        }).created);
+      }).value().reverse();
+    };
+
     VersionMap.prototype.updateVersion = function(environmentType, packageJSON) {
       var _this = this;
-      return this.downloadRegistryIndex().then(function(registryIndexJSON) {
+      return this.downloadRegistryIndex().then(function(registryIndexBuffer) {
         var updatedRegistryIndexJSON;
-        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexJSON, packageJSON, environmentType);
+        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexBuffer, packageJSON, environmentType);
         return _this.uploadRegistryIndex(updatedRegistryIndexJSON);
       }).fail(function(err) {
         return console.err("Could not update registry index!", err);
