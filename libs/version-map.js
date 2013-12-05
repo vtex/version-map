@@ -11,7 +11,7 @@
   semver = require('semver');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.7.1';
+    VersionMap.prototype.version = '0.7.2';
 
     function VersionMap(options) {
       this.updateVersion = __bind(this.updateVersion, this);
@@ -180,7 +180,7 @@
         updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexBuffer, packageJSON, tag);
         return _this.uploadRegistryIndex(updatedRegistryIndexJSON);
       }).fail(function(err) {
-        console.err("Could not update registry index!", err);
+        console.log("Could not update registry index!", err);
         return err;
       });
     };
