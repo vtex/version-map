@@ -1,6 +1,7 @@
 knox = require 'knox'
 Q = require 'q'
 _ = require 'underscore'
+semver = require 'semver'
 
 class VersionMap
   version: 'VERSION_NUMBER'
@@ -106,7 +107,11 @@ class VersionMap
   registryMapToArray: (registry) =>
     _.chain(registry)
       # Create an array with each product's object value
-      .map((project) -> project)
+      .map((project) ->
+        project.versionsArray = _.map(project.versions, (v, k) -> {version: k, created: v.created}).sort((v1, v2) -> semver.rcompare(v1.version, v2.version))
+        project.tagsArray = _.chain(project.tags).map((v, k) -> {tag: k, version: v}).sortBy((v) -> v.tag.replace('stable', 'a').replace('beta', 'b').replace('alpha', 'c')).value()
+        project
+      )
       # Sort By most recent version in each project, and insert this information in the project object
       .sortBy((project) -> project.mostRecentVersionDate = (_.max(project.versions, (version) ->  new Date(version.created)).created))
       # Extract value from chain

@@ -29,6 +29,7 @@
   "dependencies": {
     "knox": "~0.8.6",
     "q": "~0.9.7",
-    "underscore": "~1.5.2"
+    "underscore": "~1.5.2",
+    "semver": "~2.2.1"
   }
 }

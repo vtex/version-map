@@ -1,5 +1,5 @@
 (function() {
-  var Q, VersionMap, knox, _,
+  var Q, VersionMap, knox, semver, _,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   knox = require('knox');
@@ -8,8 +8,10 @@
 
   _ = require('underscore');
 
+  semver = require('semver');
+
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.4.0';
+    VersionMap.prototype.version = '0.5.0';
 
     function VersionMap(options) {
       this.updateVersion = __bind(this.updateVersion, this);
@@ -130,6 +132,22 @@
 
     VersionMap.prototype.registryMapToArray = function(registry) {
       return _.chain(registry).map(function(project) {
+        project.versionsArray = _.map(project.versions, function(v, k) {
+          return {
+            version: k,
+            created: v.created
+          };
+        }).sort(function(v1, v2) {
+          return semver.rcompare(v1.version, v2.version);
+        });
+        project.tagsArray = _.chain(project.tags).map(function(v, k) {
+          return {
+            tag: k,
+            version: v
+          };
+        }).sortBy(function(v) {
+          return v.tag.replace('stable', 'a').replace('beta', 'b').replace('alpha', 'c');
+        }).value();
         return project;
       }).sortBy(function(project) {
         return project.mostRecentVersionDate = (_.max(project.versions, function(version) {

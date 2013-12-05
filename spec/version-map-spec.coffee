@@ -23,8 +23,9 @@ registryIndexJSON = JSON.stringify({
   test: {
     name: "test"
     tags: {
-      stable: "1.0.0"
       beta: "1.0.1"
+      stable: "1.0.0"
+      alpha: "1.0.1"
     }
     paths: ["/admin/test",
             "/admin/new"]
@@ -90,4 +91,10 @@ describe 'VersionMap', ->
     registryArray = vmap.registryMapToArray(JSON.parse(registryIndexJSON))
     expect(registryArray.length).toBe(1)
     expect(registryArray[0].name).toBe("test")
+    expect(registryArray[0].tagsArray.length).toBe(3)
+    expect(registryArray[0].tagsArray[0].tag).toBe("stable")
+    expect(registryArray[0].tagsArray[1].tag).toBe("beta")
+    expect(registryArray[0].tagsArray[2].tag).toBe("alpha")
+    expect(registryArray[0].versionsArray.length).toBe(2)
+    expect(registryArray[0].versionsArray[0].version).toBe("1.0.1")
     expect(registryArray[0].mostRecentVersionDate).toBe("2013-11-21T17:42:23.577Z")
