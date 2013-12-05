@@ -11,7 +11,7 @@
   semver = require('semver');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.5.0';
+    VersionMap.prototype.version = '0.6.0';
 
     function VersionMap(options) {
       this.updateVersion = __bind(this.updateVersion, this);
@@ -36,14 +36,26 @@
       var packageAtIndex, packageObj, registryIndexObj, _base, _base1, _name;
       registryIndexObj = JSON.parse(registryIndexJSON);
       packageObj = JSON.parse(packageJSON);
+      if (!packageObj.name) {
+        throw new Error("Required property name not found");
+      }
+      if (!packageObj.version) {
+        throw new Error("Required property version not found");
+      }
       registryIndexObj[_name = packageObj.name] || (registryIndexObj[_name] = {});
       (_base = registryIndexObj[packageObj.name]).tags || (_base.tags = {});
       (_base1 = registryIndexObj[packageObj.name]).versions || (_base1.versions = {});
       packageAtIndex = registryIndexObj[packageObj.name];
       packageAtIndex.name = packageObj.name;
-      packageAtIndex.paths = packageObj.paths;
-      packageAtIndex.hosts = packageObj.hosts;
-      packageAtIndex.main = packageObj.main;
+      if (packageObj.paths) {
+        packageAtIndex.paths = packageObj.paths;
+      }
+      if (packageObj.hosts) {
+        packageAtIndex.hosts = packageObj.hosts;
+      }
+      if (packageObj.main) {
+        packageAtIndex.main = packageObj.main;
+      }
       packageAtIndex.versions[packageObj.version] = {};
       packageAtIndex.versions[packageObj.version].created = new Date();
       if (tag) {

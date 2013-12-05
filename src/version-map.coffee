@@ -16,9 +16,14 @@ class VersionMap
     @registryIndexPath = "index.json"
 
   # Uploads this registryIndex object on the appropriate path, updating this project's key to the current version
+  # packageJSON has two required properties: name and version
   updateRegistryIndexJSON: (registryIndexJSON, packageJSON, tag) =>
     registryIndexObj = JSON.parse(registryIndexJSON)
     packageObj = JSON.parse(packageJSON)
+
+    throw new Error("Required property name not found") unless packageObj.name
+    throw new Error("Required property version not found") unless packageObj.version
+
     # Create the object for this project if not available
     registryIndexObj[packageObj.name] or= {}
     registryIndexObj[packageObj.name].tags or= {}
@@ -26,9 +31,9 @@ class VersionMap
 
     packageAtIndex = registryIndexObj[packageObj.name]
     packageAtIndex.name = packageObj.name
-    packageAtIndex.paths = packageObj.paths
-    packageAtIndex.hosts = packageObj.hosts
-    packageAtIndex.main = packageObj.main
+    packageAtIndex.paths = packageObj.paths if packageObj.paths
+    packageAtIndex.hosts = packageObj.hosts if packageObj.hosts
+    packageAtIndex.main = packageObj.main if packageObj.main
     # Add new version to versions map
     packageAtIndex.versions[packageObj.version] = {}
     packageAtIndex.versions[packageObj.version].created = new Date()
