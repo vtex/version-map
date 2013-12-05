@@ -132,7 +132,7 @@ class VersionMap
       updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexBuffer, packageJSON, tag)
       @uploadRegistryIndex(updatedRegistryIndexJSON)
     .fail (err) ->
-      console.err "Could not update registry index!", err
+      console.log "Could not update registry index!", err
       err
 
 module.exports = VersionMap
