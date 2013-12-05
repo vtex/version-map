@@ -42,9 +42,11 @@
       packageAtIndex.paths = packageObj.paths;
       packageAtIndex.hosts = packageObj.hosts;
       packageAtIndex.main = packageObj.main;
-      packageAtIndex.tags[tag] = packageObj.version;
       packageAtIndex.versions[packageObj.version] = {};
       packageAtIndex.versions[packageObj.version].created = new Date();
+      if (tag) {
+        packageAtIndex.tags[tag] = packageObj.version;
+      }
       return JSON.stringify(registryIndexObj);
     };
 
@@ -136,11 +138,16 @@
       }).value().reverse();
     };
 
-    VersionMap.prototype.updateVersion = function(environmentType, packageJSON) {
+    /*
+    Updates version at the index, changing the provided tag, if any.
+    */
+
+
+    VersionMap.prototype.updateVersion = function(packageJSON, tag) {
       var _this = this;
       return this.downloadRegistryIndex().then(function(registryIndexBuffer) {
         var updatedRegistryIndexJSON;
-        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexBuffer, packageJSON, environmentType);
+        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexBuffer, packageJSON, tag);
         return _this.uploadRegistryIndex(updatedRegistryIndexJSON);
       }).fail(function(err) {
         return console.err("Could not update registry index!", err);

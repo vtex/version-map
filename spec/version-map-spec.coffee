@@ -55,7 +55,7 @@ describe 'VersionMap', ->
     expect(vmap.s3Client).toBeDefined()
     expect(vmap.registryIndexPath).toBeDefined()
 
-  it 'should update a registryIndex JSON correctly', ->
+  it 'should update a registryIndex JSON correctly with tag', ->
     updatedVersionMapJSON = vmap.updateRegistryIndexJSON(registryIndexJSON, packageJSON, 'beta')
     registryIndex = JSON.parse updatedVersionMapJSON
     expect(registryIndex.test.paths).toEqual(JSON.parse(packageJSON).paths)
@@ -63,6 +63,15 @@ describe 'VersionMap', ->
     expect(registryIndex.test.versions["1.0.2"]).toBeDefined()
     expect(registryIndex.test.versions["1.0.2"].created).toBeDefined()
     expect(registryIndex.test.tags.beta).toBe("1.0.2")
+
+  it 'should update a registryIndex JSON correctly without tag', ->
+    updatedVersionMapJSON = vmap.updateRegistryIndexJSON(registryIndexJSON, packageJSON)
+    registryIndex = JSON.parse updatedVersionMapJSON
+    expect(registryIndex.test.paths).toEqual(JSON.parse(packageJSON).paths)
+    expect(registryIndex.test.hosts).toEqual(JSON.parse(packageJSON).hosts)
+    expect(registryIndex.test.versions["1.0.2"]).toBeDefined()
+    expect(registryIndex.test.versions["1.0.2"].created).toBeDefined()
+    expect(registryIndex.test.tags.beta).toBe("1.0.1")
 
   it 'should call upload and download with appropriate values', ->
     spyOn(vmap, 'downloadRegistryIndex').andReturn Q(registryIndexJSON)

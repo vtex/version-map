@@ -28,9 +28,12 @@ class VersionMap
     packageAtIndex.paths = packageObj.paths
     packageAtIndex.hosts = packageObj.hosts
     packageAtIndex.main = packageObj.main
-    packageAtIndex.tags[tag] = packageObj.version # e.g. "stable": "1.0.0"
+    # Add new version to versions map
     packageAtIndex.versions[packageObj.version] = {}
     packageAtIndex.versions[packageObj.version].created = new Date()
+    # Add or change tag, if available
+    if tag
+      packageAtIndex.tags[tag] = packageObj.version # e.g. "stable": "1.0.0"
 
     return JSON.stringify(registryIndexObj)
 
@@ -111,9 +114,12 @@ class VersionMap
       # Sort by gives us ascending order, we need descending
       .reverse()
 
-  updateVersion: (environmentType, packageJSON) =>
+  ###
+  Updates version at the index, changing the provided tag, if any.
+  ###
+  updateVersion: (packageJSON, tag) =>
     @downloadRegistryIndex().then (registryIndexBuffer) =>
-      updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexBuffer, packageJSON, environmentType)
+      updatedRegistryIndexJSON = @updateRegistryIndexJSON(registryIndexBuffer, packageJSON, tag)
       @uploadRegistryIndex(updatedRegistryIndexJSON)
     .fail (err) ->
       console.err "Could not update registry index!", err
