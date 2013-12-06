@@ -4,7 +4,6 @@ _ = require 'underscore'
 semver = require 'semver'
 
 class VersionMap
-  version: 'VERSION_NUMBER'
   constructor: (options) ->
     @key = options.key
     @secret = options.secret
@@ -110,6 +109,8 @@ class VersionMap
       else if res.statusCode is 200
         res.on 'data', (chunk) ->
           deferred.resolve chunk
+      else
+        deferred.reject new Error("Failed to download registry index at #{@registryIndexPath}. Status: #{res.statusCode}")
 
     req.end()
     return deferred.promise

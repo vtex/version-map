@@ -71,7 +71,6 @@ describe 'VersionMap', ->
 
   it 'should exist', ->
     expect(VersionMap).toBeDefined()
-    expect(vmap.version).toBeTruthy()
 
   it 'should have defined properties', ->
     expect(vmap.key).toBe(options.key)

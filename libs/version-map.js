@@ -11,8 +11,6 @@
   semver = require('semver');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.8.0';
-
     function VersionMap(options) {
       this.versionDirectory = __bind(this.versionDirectory, this);
       this.updateVersion = __bind(this.updateVersion, this);
@@ -137,6 +135,8 @@
           return res.on('data', function(chunk) {
             return deferred.resolve(chunk);
           });
+        } else {
+          return deferred.reject(new Error("Failed to download registry index at " + this.registryIndexPath + ". Status: " + res.statusCode));
         }
       });
       req.end();
