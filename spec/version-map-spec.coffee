@@ -148,10 +148,10 @@ describe 'VersionMap', ->
     expect( -> vmap.updateRegistryIndexJSON(registryIndexJSON, virtualPackageJSON, 'stable')).toThrow(new Error("Required property for creation backend not found"))
 
   it 'should call upload and download with appropriate values', ->
-    spyOn(vmap, 'downloadRegistryIndex').andReturn Q(registryIndexJSON)
-    spyOn(vmap, 'uploadRegistryIndex').andReturn Q(registryIndexJSON)
+    vmap.downloadRegistryIndex = createSpy('downloadRegistryIndex').andCallFake -> Q(registryIndexJSON)
+    vmap.uploadRegistryIndex = createSpy('uploadRegistryIndex').andCallFake -> Q(registryIndexJSON)
 
-    promise = vmap.updateVersion('beta', packageJSON)
+    promise = vmap.updateVersion(packageJSON, 'beta')
 
     expect(promise).toBeDefined()
 

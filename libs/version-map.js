@@ -11,7 +11,7 @@
   semver = require('semver');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.7.5';
+    VersionMap.prototype.version = '0.8.0';
 
     function VersionMap(options) {
       this.versionDirectory = __bind(this.versionDirectory, this);
