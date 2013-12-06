@@ -25,6 +25,10 @@
       this.key = options.key;
       this.secret = options.secret;
       this.bucket = options.bucket;
+      this.dryRun = options.dryRun;
+      if (this.dryRun) {
+        console.log('\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n');
+      }
       this.s3Client = knox.createClient({
         key: this.key,
         secret: this.secret,
@@ -77,6 +81,10 @@
 
     VersionMap.prototype.uploadRegistryIndex = function(registryIndexJSON) {
       var deferred, req, timeoutCallback, timeoutMillis;
+      if (this.dryRun) {
+        console.log('\nWARNING: VersionMap running in dry run mode. No changes were actually made.\n');
+        return Q(registryIndexJSON);
+      }
       deferred = Q.defer();
       req = this.s3Client.put(this.registryIndexPath, {
         "Content-Length": registryIndexJSON.length,

@@ -9,6 +9,8 @@ class VersionMap
     @key = options.key
     @secret = options.secret
     @bucket = options.bucket
+    @dryRun = options.dryRun
+    console.log '\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n' if @dryRun
     @s3Client = knox.createClient
       key: @key
       secret: @secret
@@ -52,6 +54,10 @@ class VersionMap
     return JSON.stringify(registry)
 
   uploadRegistryIndex: (registryIndexJSON) =>
+    if @dryRun
+      console.log '\nWARNING: VersionMap running in dry run mode. No changes were actually made.\n'
+      return Q(registryIndexJSON)
+
     deferred = Q.defer()
     req = @s3Client.put(@registryIndexPath,
       "Content-Length": registryIndexJSON.length

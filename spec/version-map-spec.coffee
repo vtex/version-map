@@ -5,64 +5,69 @@ options =
   secret: 'FGH'
   bucket: 'test-bucket'
 
-vmap = new VersionMap(options)
-
-packageJSON = JSON.stringify({
-  name: "test"
-  version: "1.0.2"
-  main: "index.html"
-  backend: "https://io.vtex.com.br/"
-  paths: ["/admin/test",
-          "/admin/new",
-          "/admin/newest"]
-  hosts: ["vtexcommerce.com.br",
-          "vtexcommercebeta.com.br",
-          "vtexlocal.com.br"]
-  description: "a test package that works"
-})
-
-registryIndexJSON = JSON.stringify({
-  test: {
-    name: "test"
-    tags: {
-      beta: "1.0.1-beta"
-      stable: "1.0.0"
-      next: "1.0.1"
-      alpha: "1.0.1-alpha"
-    }
-    main: "index.html"
-    paths: ["/admin/test",
-            "/admin/new"]
-    hosts: ["vtexcommerce.com.br",
-            "vtexcommercebeta.com.br",
-            "vtexlocal.com.br"],
-    backend: "https://io.vtex.com.br/"
-    versions: {
-      "1.0.0": {
-        version: "1.0.0"
-        rootRewrite: "test/1.0.0"
-        created: "2013-11-21T17:28:23.577Z"
-      }
-      "1.0.1": {
-        version: "1.0.1"
-        rootRewrite: "test/1.0.1"
-        created: "2013-11-26T17:42:23.577Z"
-      }
-      "1.0.1-beta": {
-        version: "1.0.1-beta"
-        rootRewrite: "test/1.0.1-beta"
-        created: "2013-11-24T17:42:23.577Z"
-      }
-      "1.0.1-alpha": {
-        version: "1.0.1-alpha"
-        rootRewrite: "test/1.0.1-alpha"
-        created: "2013-11-23T17:42:23.577Z"
-      }
-    }
-  }
-})
+vmap = undefined
+packageJSON = undefined
+registryIndexJSON = undefined
 
 describe 'VersionMap', ->
+
+  beforeEach ->
+    vmap = new VersionMap(options)
+
+    packageJSON = JSON.stringify({
+      name: "test"
+      version: "1.0.2"
+      main: "index.html"
+      backend: "https://io.vtex.com.br/"
+      paths: ["/admin/test",
+              "/admin/new",
+              "/admin/newest"]
+      hosts: ["vtexcommerce.com.br",
+              "vtexcommercebeta.com.br",
+              "vtexlocal.com.br"]
+      description: "a test package that works"
+    })
+
+    registryIndexJSON = JSON.stringify({
+      test: {
+        name: "test"
+        tags: {
+          beta: "1.0.1-beta"
+          stable: "1.0.0"
+          next: "1.0.1"
+          alpha: "1.0.1-alpha"
+        }
+        main: "index.html"
+        paths: ["/admin/test",
+                "/admin/new"]
+        hosts: ["vtexcommerce.com.br",
+                "vtexcommercebeta.com.br",
+                "vtexlocal.com.br"],
+        backend: "https://io.vtex.com.br/"
+        versions: {
+          "1.0.0": {
+            version: "1.0.0"
+            rootRewrite: "test/1.0.0"
+            created: "2013-11-21T17:28:23.577Z"
+          }
+          "1.0.1": {
+            version: "1.0.1"
+            rootRewrite: "test/1.0.1"
+            created: "2013-11-26T17:42:23.577Z"
+          }
+          "1.0.1-beta": {
+            version: "1.0.1-beta"
+            rootRewrite: "test/1.0.1-beta"
+            created: "2013-11-24T17:42:23.577Z"
+          }
+          "1.0.1-alpha": {
+            version: "1.0.1-alpha"
+            rootRewrite: "test/1.0.1-alpha"
+            created: "2013-11-23T17:42:23.577Z"
+          }
+        }
+      }
+    })
 
   it 'should exist', ->
     expect(VersionMap).toBeDefined()
@@ -150,6 +155,24 @@ describe 'VersionMap', ->
   it 'should call upload and download with appropriate values', ->
     vmap.downloadRegistryIndex = createSpy('downloadRegistryIndex').andCallFake -> Q(registryIndexJSON)
     vmap.uploadRegistryIndex = createSpy('uploadRegistryIndex').andCallFake -> Q(registryIndexJSON)
+
+    promise = vmap.updateVersion(packageJSON, 'beta')
+
+    expect(promise).toBeDefined()
+
+    promise.then (response) ->
+      expect(vmap.downloadRegistryIndex).toHaveBeenCalled()
+      expect(vmap.uploadRegistryIndex).toHaveBeenCalledWith([registryIndexJSON])
+      expect(response).toBe(registryIndexJSON)
+
+  it 'should call upload and download with appropriate values in dry run mode', ->
+    vmap = new VersionMap(
+      key: 'ASD'
+      secret: 'FGH'
+      bucket: 'test-bucket'
+      dryRun: true
+    )
+    vmap.downloadRegistryIndex = createSpy('downloadRegistryIndex').andCallFake -> Q(registryIndexJSON)
 
     promise = vmap.updateVersion(packageJSON, 'beta')
 
