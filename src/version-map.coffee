@@ -18,30 +18,38 @@ class VersionMap
   # Uploads this registryIndex object on the appropriate path, updating this project's key to the current version
   # packageJSON has two required properties: name and version
   updateRegistryIndexJSON: (registryIndexJSON, packageJSON, tag) =>
-    registryIndexObj = JSON.parse(registryIndexJSON)
-    packageObj = JSON.parse(packageJSON)
+    registry = JSON.parse(registryIndexJSON)
+    pkg = JSON.parse(packageJSON)
 
-    throw new Error("Required property name not found") unless packageObj.name
-    throw new Error("Required property version not found") unless packageObj.version
+    throw new Error("Required property name not found") unless pkg.name
+    throw new Error("Required property version not found") unless pkg.version
+    throw new Error("Required property for creation backend not found") if not pkg.backend and pkg.hosts and pkg.paths
 
-    # Create the object for this project if not available
-    registryIndexObj[packageObj.name] or= {}
-    registryIndexObj[packageObj.name].tags or= {}
-    registryIndexObj[packageObj.name].versions or= {}
+    # Check whether this project already exists
+    unless registry[pkg.name]
+      # Create this project
+      registry[pkg.name] =
+        name: pkg.name
+        tags: {}
+        versions: {}
 
-    packageAtIndex = registryIndexObj[packageObj.name]
-    packageAtIndex.name = packageObj.name
-    packageAtIndex.paths = packageObj.paths if packageObj.paths
-    packageAtIndex.hosts = packageObj.hosts if packageObj.hosts
-    packageAtIndex.main = packageObj.main if packageObj.main
+    # Add updatable properties - these may be changed by future versions for the root project
+    registry[pkg.name].backend = pkg.backend if pkg.backend
+    registry[pkg.name].paths = pkg.paths if pkg.paths
+    registry[pkg.name].hosts = pkg.hosts if pkg.hosts
+    registry[pkg.name].main = pkg.main if pkg.main
+
     # Add new version to versions map
-    packageAtIndex.versions[packageObj.version] = {}
-    packageAtIndex.versions[packageObj.version].created = new Date()
+    registry[pkg.name].versions[pkg.version] = {}
+    registry[pkg.name].versions[pkg.version].version = pkg.version
+    registry[pkg.name].versions[pkg.version].created = new Date()
+    registry[pkg.name].versions[pkg.version].rootRewrite = @versionDirectory(pkg)
+
     # Add or change tag, if available
     if tag
-      packageAtIndex.tags[tag] = packageObj.version # e.g. "stable": "1.0.0"
+      registry[pkg.name].tags[tag] = pkg.version # e.g. "stable": "1.0.0"
 
-    return JSON.stringify(registryIndexObj)
+    return JSON.stringify(registry)
 
   uploadRegistryIndex: (registryIndexJSON) =>
     deferred = Q.defer()
@@ -113,8 +121,8 @@ class VersionMap
     _.chain(registry)
       # Create an array with each product's object value
       .map((project) ->
-        project.versionsArray = _.map(project.versions, (v, k) -> {version: k, created: v.created}).sort((v1, v2) -> semver.rcompare(v1.version, v2.version))
-        project.tagsArray = _.chain(project.tags).map((v, k) -> {tag: k, version: v}).sortBy((v) -> v.tag.replace('stable', 'a').replace('beta', 'b').replace('alpha', 'c')).value()
+        project.versionsArray = _.map(project.versions, (v) -> v).sort((v1, v2) -> semver.rcompare(v1.version, v2.version))
+        project.tagsArray = _.chain(project.tags).map((v, k) -> {tag: k, version: v}).sortBy((v) -> v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c')).value()
         project
       )
       # Sort By most recent version in each project, and insert this information in the project object
@@ -134,5 +142,17 @@ class VersionMap
     .fail (err) ->
       console.log "Could not update registry index!", err
       err
+
+  ###
+  Returns the version name for the given package
+  ###
+  versionName: (packageObj) ->
+    packageObj.version
+
+  ###
+  Returns the version directory for the given package
+  ###
+  versionDirectory: (packageObj) =>
+    packageObj.name + "/" +  @versionName(packageObj)
 
 module.exports = VersionMap

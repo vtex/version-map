@@ -11,9 +11,10 @@
   semver = require('semver');
 
   VersionMap = (function() {
-    VersionMap.prototype.version = '0.7.2';
+    VersionMap.prototype.version = '0.7.5';
 
     function VersionMap(options) {
+      this.versionDirectory = __bind(this.versionDirectory, this);
       this.updateVersion = __bind(this.updateVersion, this);
       this.registryMapToArray = __bind(this.registryMapToArray, this);
       this.getRegistryAsArray = __bind(this.getRegistryAsArray, this);
@@ -33,35 +34,45 @@
     }
 
     VersionMap.prototype.updateRegistryIndexJSON = function(registryIndexJSON, packageJSON, tag) {
-      var packageAtIndex, packageObj, registryIndexObj, _base, _base1, _name;
-      registryIndexObj = JSON.parse(registryIndexJSON);
-      packageObj = JSON.parse(packageJSON);
-      if (!packageObj.name) {
+      var pkg, registry;
+      registry = JSON.parse(registryIndexJSON);
+      pkg = JSON.parse(packageJSON);
+      if (!pkg.name) {
         throw new Error("Required property name not found");
       }
-      if (!packageObj.version) {
+      if (!pkg.version) {
         throw new Error("Required property version not found");
       }
-      registryIndexObj[_name = packageObj.name] || (registryIndexObj[_name] = {});
-      (_base = registryIndexObj[packageObj.name]).tags || (_base.tags = {});
-      (_base1 = registryIndexObj[packageObj.name]).versions || (_base1.versions = {});
-      packageAtIndex = registryIndexObj[packageObj.name];
-      packageAtIndex.name = packageObj.name;
-      if (packageObj.paths) {
-        packageAtIndex.paths = packageObj.paths;
+      if (!pkg.backend && pkg.hosts && pkg.paths) {
+        throw new Error("Required property for creation backend not found");
       }
-      if (packageObj.hosts) {
-        packageAtIndex.hosts = packageObj.hosts;
+      if (!registry[pkg.name]) {
+        registry[pkg.name] = {
+          name: pkg.name,
+          tags: {},
+          versions: {}
+        };
       }
-      if (packageObj.main) {
-        packageAtIndex.main = packageObj.main;
+      if (pkg.backend) {
+        registry[pkg.name].backend = pkg.backend;
       }
-      packageAtIndex.versions[packageObj.version] = {};
-      packageAtIndex.versions[packageObj.version].created = new Date();
+      if (pkg.paths) {
+        registry[pkg.name].paths = pkg.paths;
+      }
+      if (pkg.hosts) {
+        registry[pkg.name].hosts = pkg.hosts;
+      }
+      if (pkg.main) {
+        registry[pkg.name].main = pkg.main;
+      }
+      registry[pkg.name].versions[pkg.version] = {};
+      registry[pkg.name].versions[pkg.version].version = pkg.version;
+      registry[pkg.name].versions[pkg.version].created = new Date();
+      registry[pkg.name].versions[pkg.version].rootRewrite = this.versionDirectory(pkg);
       if (tag) {
-        packageAtIndex.tags[tag] = packageObj.version;
+        registry[pkg.name].tags[tag] = pkg.version;
       }
-      return JSON.stringify(registryIndexObj);
+      return JSON.stringify(registry);
     };
 
     VersionMap.prototype.uploadRegistryIndex = function(registryIndexJSON) {
@@ -144,11 +155,8 @@
 
     VersionMap.prototype.registryMapToArray = function(registry) {
       return _.chain(registry).map(function(project) {
-        project.versionsArray = _.map(project.versions, function(v, k) {
-          return {
-            version: k,
-            created: v.created
-          };
+        project.versionsArray = _.map(project.versions, function(v) {
+          return v;
         }).sort(function(v1, v2) {
           return semver.rcompare(v1.version, v2.version);
         });
@@ -158,7 +166,7 @@
             version: v
           };
         }).sortBy(function(v) {
-          return v.tag.replace('stable', 'a').replace('beta', 'b').replace('alpha', 'c');
+          return v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c');
         }).value();
         return project;
       }).sortBy(function(project) {
@@ -183,6 +191,24 @@
         console.log("Could not update registry index!", err);
         return err;
       });
+    };
+
+    /*
+    Returns the version name for the given package
+    */
+
+
+    VersionMap.prototype.versionName = function(packageObj) {
+      return packageObj.version;
+    };
+
+    /*
+    Returns the version directory for the given package
+    */
+
+
+    VersionMap.prototype.versionDirectory = function(packageObj) {
+      return packageObj.name + "/" + this.versionName(packageObj);
     };
 
     return VersionMap;
