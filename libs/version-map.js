@@ -115,7 +115,8 @@
 
 
     VersionMap.prototype.downloadRegistryIndex = function() {
-      var deferred, req, timeoutCallback, timeoutMillis;
+      var deferred, req, timeoutCallback, timeoutMillis,
+        _this = this;
       deferred = Q.defer();
       req = this.s3Client.get(this.registryIndexPath);
       timeoutMillis = 1000 * 30;
@@ -129,14 +130,14 @@
       });
       req.on("response", function(res) {
         if (res.statusCode === 404) {
-          console.warn("No such registry index file available: " + this.registryIndexPath + ". Creating one now.");
+          console.warn("No such registry index file available: " + _this.registryIndexPath + ". Creating one now.");
           return deferred.resolve("{}");
         } else if (res.statusCode === 200) {
           return res.on('data', function(chunk) {
             return deferred.resolve(chunk);
           });
         } else {
-          return deferred.reject(new Error("Failed to download registry index at " + this.registryIndexPath + ". Status: " + res.statusCode));
+          return deferred.reject(new Error("Failed to download registry index at " + _this.registryIndexPath + ". Status: " + res.statusCode));
         }
       });
       req.end();

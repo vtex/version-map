@@ -102,7 +102,7 @@ class VersionMap
     req.on "error", (err) ->
       deferred.reject err
 
-    req.on "response", (res) ->
+    req.on "response", (res) =>
       if res.statusCode is 404
         console.warn "No such registry index file available: #{@registryIndexPath}. Creating one now."
         deferred.resolve "{}"
