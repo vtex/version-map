@@ -15,6 +15,7 @@
   VersionMap = (function() {
     function VersionMap(options) {
       this.versionDirectory = __bind(this.versionDirectory, this);
+      this.removeMajor = __bind(this.removeMajor, this);
       this.updateTag = __bind(this.updateTag, this);
       this.addVersion = __bind(this.addVersion, this);
       this.tagsMapToArray = __bind(this.tagsMapToArray, this);
@@ -24,6 +25,7 @@
       this.downloadRegistry = __bind(this.downloadRegistry, this);
       this.uploadRegistry = __bind(this.uploadRegistry, this);
       this.updateTagsFromRegistry = __bind(this.updateTagsFromRegistry, this);
+      this.removeMajorFromTags = __bind(this.removeMajorFromTags, this);
       this.updateTags = __bind(this.updateTags, this);
       this.updateRegistry = __bind(this.updateRegistry, this);
       this.key = options.key;
@@ -101,6 +103,23 @@
       }
       major = semver(version).major;
       tags[name][tag][major] = version;
+      return tags;
+    };
+
+    VersionMap.prototype.removeMajorFromTags = function(tags, name, major, tag) {
+      if (!name) {
+        throw new Error("Required property name is null or undefined");
+      }
+      if (!major) {
+        throw new Error("Required property major is null or undefined");
+      }
+      if (!tag) {
+        throw new Error("Required property tag is null or undefined");
+      }
+      if (tag !== "stable" && tag !== "next" && tag !== "beta" && tag !== "alpha") {
+        throw new Error("Tag must be one of: stable, next, beta, alpha");
+      }
+      delete tags[name][tag][major];
       return tags;
     };
 
@@ -242,6 +261,23 @@
         return _this.uploadTags(updatedTags);
       }).fail(function(err) {
         console.log("Could not update tags", err);
+        return err;
+      });
+    };
+
+    /*
+    Removes major from this tag in tags object
+    */
+
+
+    VersionMap.prototype.removeMajor = function(name, major, tag) {
+      var _this = this;
+      return this.downloadTags().then(function(tags) {
+        var updatedTags;
+        updatedTags = _this.removeMajorFromTags(tags, name, major, tag);
+        return _this.uploadTags(updatedTags);
+      }).fail(function(err) {
+        console.log("Could not remove major from tags", err);
         return err;
       });
     };

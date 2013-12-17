@@ -138,6 +138,12 @@ describe 'VersionMap', ->
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.2")
 
+  it 'should remove a major from tags JSON correctly', ->
+    expect(tags.test.next["1"]).toEqual("1.0.1-beta")
+    tags = vmap.removeMajorFromTags(tags, pack.name, '1', 'next')
+    expect(_.keys(tags.test).length).toBe(4)
+    expect(tags.test.next["1"]).toBeUndefined()
+
   it 'should update a registry JSON tag correctly without a complete packageJSON', ->
     virtualPackage = {name: "test", version: "2.0.0"}
     registry = vmap.updateRegistry(registry, virtualPackage)
@@ -182,16 +188,19 @@ describe 'VersionMap', ->
     expect( -> vmap.updateRegistry(registry, virtualPackage)).toThrow(new Error("Required property for creation backend not found"))
 
   it 'should throw an error when updating a tags object without name', ->
-    expect( -> vmap.updateTags(registry, null, "2.0.0", "stable")).toThrow(new Error("Required property name is null or undefined"))
+    expect( -> vmap.updateTags(tags, null, "2.0.0", "stable")).toThrow(new Error("Required property name is null or undefined"))
 
   it 'should throw an error when updating a tags object without version', ->
-    expect( -> vmap.updateTags(registry, "test", null, "stable")).toThrow(new Error("Required property version is null or undefined"))
+    expect( -> vmap.updateTags(tags, "test", null, "stable")).toThrow(new Error("Required property version is null or undefined"))
 
   it 'should throw an error when updating a tags object without tag', ->
-    expect( -> vmap.updateTags(registry, "test", "2.0.0", null)).toThrow(new Error("Required property tag is null or undefined"))
+    expect( -> vmap.updateTags(tags, "test", "2.0.0", null)).toThrow(new Error("Required property tag is null or undefined"))
 
   it 'should throw an error when updating a tags object with invalid tag', ->
-    expect( -> vmap.updateTags(registry, "test", "2.0.0", "banana")).toThrow(new Error("Tag must be one of: stable, next, beta, alpha"))
+    expect( -> vmap.updateTags(tags, "test", "2.0.0", "banana")).toThrow(new Error("Tag must be one of: stable, next, beta, alpha"))
+
+  it 'should throw an error when removing a major from tags object without major', ->
+    expect( -> vmap.removeMajorFromTags(tags, "test", null, "stable")).toThrow(new Error("Required property major is null or undefined"))
 
   it 'should call upload and download with appropriate values in dry run mode', ->
     vmap = new VersionMap(
@@ -207,6 +216,8 @@ describe 'VersionMap', ->
       expect(vmap.downloadRegistry).toHaveBeenCalled()
       expect(vmap.uploadRegistry).toHaveBeenCalledWith([registry])
       expect(response).toBe(registry)
+      # TODO fix async running of this promise
+      expect(false).toBe(true)
 
   it 'should call upload and download when updating tags in dry run mode', ->
     vmap = new VersionMap
@@ -221,6 +232,8 @@ describe 'VersionMap', ->
       expect(vmap.downloadTags).toHaveBeenCalled()
       expect(vmap.uploadTags).toHaveBeenCalledWith([tags])
       expect(response).toBe(tags)
+      # TODO fix async running of this promise
+      expect(false).toBe(true)
 
   it 'should transform a registry map to array', ->
     registryArray = vmap.registryMapToArray(registry)

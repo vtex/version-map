@@ -65,6 +65,17 @@ class VersionMap
 
     return tags
 
+  # Removes this major from the tags map
+  removeMajorFromTags: (tags, name, major, tag) =>
+    throw new Error("Required property name is null or undefined") unless name
+    throw new Error("Required property major is null or undefined") unless major
+    throw new Error("Required property tag is null or undefined") unless tag
+    throw new Error("Tag must be one of: stable, next, beta, alpha") unless tag in ["stable", "next", "beta", "alpha"]
+
+    delete tags[name][tag][major]
+
+    return tags
+
   # Updates the tags map with the latest versions from the registry
   updateTagsFromRegistry: (tags, registry) =>
     for projectName, project of registry
@@ -164,6 +175,17 @@ class VersionMap
       @uploadTags(updatedTags)
     .fail (err) ->
       console.log "Could not update tags", err
+      err
+
+  ###
+  Removes major from this tag in tags object
+  ###
+  removeMajor: (name, major, tag) =>
+    @downloadTags().then (tags) =>
+      updatedTags = @removeMajorFromTags(tags, name, major, tag)
+      @uploadTags(updatedTags)
+    .fail (err) ->
+      console.log "Could not remove major from tags", err
       err
 
   ###
