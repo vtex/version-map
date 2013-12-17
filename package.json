@@ -1,6 +1,6 @@
 {
   "name": "version-map",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "readmeFilename": "README.md",
   "description": "A utilitary for manipulating version maps.",
   "main": "libs/version-map.js",
