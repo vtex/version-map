@@ -1,5 +1,5 @@
 (function() {
-  var Q, VersionMap, knox, semver, _,
+  var Q, VersionMap, knox, semver, utils, _,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   knox = require('knox');
@@ -10,19 +10,25 @@
 
   semver = require('semver');
 
+  utils = require('./s3-utils');
+
   VersionMap = (function() {
     function VersionMap(options) {
       this.versionDirectory = __bind(this.versionDirectory, this);
-      this.updateVersion = __bind(this.updateVersion, this);
+      this.updateTag = __bind(this.updateTag, this);
+      this.addVersion = __bind(this.addVersion, this);
+      this.tagsMapToArray = __bind(this.tagsMapToArray, this);
       this.registryMapToArray = __bind(this.registryMapToArray, this);
-      this.getRegistryAsArray = __bind(this.getRegistryAsArray, this);
-      this.getRegistryJSON = __bind(this.getRegistryJSON, this);
-      this.downloadRegistryIndex = __bind(this.downloadRegistryIndex, this);
-      this.uploadRegistryIndex = __bind(this.uploadRegistryIndex, this);
-      this.updateRegistryIndexJSON = __bind(this.updateRegistryIndexJSON, this);
+      this.downloadTags = __bind(this.downloadTags, this);
+      this.uploadTags = __bind(this.uploadTags, this);
+      this.downloadRegistry = __bind(this.downloadRegistry, this);
+      this.uploadRegistry = __bind(this.uploadRegistry, this);
+      this.updateTagsFromRegistry = __bind(this.updateTagsFromRegistry, this);
+      this.updateTags = __bind(this.updateTags, this);
+      this.updateRegistry = __bind(this.updateRegistry, this);
       this.key = options.key;
       this.secret = options.secret;
-      this.bucket = options.bucket;
+      this.bucket = options.bucket || 'vtex-versioned';
       this.dryRun = options.dryRun;
       if (this.dryRun) {
         console.log('\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n');
@@ -32,13 +38,11 @@
         secret: this.secret,
         bucket: this.bucket
       });
-      this.registryIndexPath = "index.json";
+      this.registryPath = "registry/1/registry.json";
+      this.tagsPath = "registry/1/tags.json";
     }
 
-    VersionMap.prototype.updateRegistryIndexJSON = function(registryIndexJSON, packageJSON, tag) {
-      var pkg, registry;
-      registry = JSON.parse(registryIndexJSON);
-      pkg = JSON.parse(packageJSON);
+    VersionMap.prototype.updateRegistry = function(registry, pkg) {
       if (!pkg.name) {
         throw new Error("Required property name not found");
       }
@@ -51,7 +55,6 @@
       if (!registry[pkg.name]) {
         registry[pkg.name] = {
           name: pkg.name,
-          tags: {},
           versions: {}
         };
       }
@@ -71,94 +74,98 @@
       registry[pkg.name].versions[pkg.version].version = pkg.version;
       registry[pkg.name].versions[pkg.version].created = new Date();
       registry[pkg.name].versions[pkg.version].rootRewrite = this.versionDirectory(pkg);
-      if (tag) {
-        registry[pkg.name].tags[tag] = pkg.version;
-      }
-      return JSON.stringify(registry);
+      return registry;
     };
 
-    VersionMap.prototype.uploadRegistryIndex = function(registryIndexJSON) {
-      var deferred, req, timeoutCallback, timeoutMillis;
-      if (this.dryRun) {
-        console.log('\nWARNING: VersionMap running in dry run mode. No changes were actually made.\n');
-        return Q(registryIndexJSON);
+    VersionMap.prototype.updateTags = function(tags, name, version, tag) {
+      var major;
+      if (!name) {
+        throw new Error("Required property name is null or undefined");
       }
-      deferred = Q.defer();
-      req = this.s3Client.put(this.registryIndexPath, {
-        "Content-Length": registryIndexJSON.length,
-        "Content-Type": "application/json"
-      });
-      timeoutMillis = 1000 * 30;
-      timeoutCallback = function() {
-        req.abort();
-        return deferred.reject(new Error("Timeout exceeded when uploading registry index at " + this.registryIndexPath));
-      };
-      req.setTimeout(timeoutMillis, timeoutCallback);
-      req.on("error", function(err) {
-        return deferred.reject(new Error(err));
-      });
-      req.on("response", function(res) {
-        if (200 === res.statusCode) {
-          console.log("Version updated at " + req.url);
-          return deferred.resolve(registryIndexJSON);
-        } else {
-          return deferred.reject(new Error("Failed to upload registry index at " + this.registryIndexPath));
+      if (!version) {
+        throw new Error("Required property version is null or undefined");
+      }
+      if (!tag) {
+        throw new Error("Required property tag is null or undefined");
+      }
+      if (tag !== "stable" && tag !== "next" && tag !== "beta" && tag !== "alpha") {
+        throw new Error("Tag must be one of: stable, next, beta, alpha");
+      }
+      if (!tags[name]) {
+        tags[name] = {
+          name: name,
+          stable: {},
+          next: {},
+          beta: {},
+          alpha: {}
+        };
+      }
+      major = semver(version).major;
+      tags[name][tag][major] = version;
+      tags[name][tag].latest = version;
+      return tags;
+    };
+
+    VersionMap.prototype.updateTagsFromRegistry = function(tags, registry) {
+      var biggest, majorName, majors, project, projectName, tagName, tagNames;
+      for (projectName in registry) {
+        project = registry[projectName];
+        tagNames = _.groupBy(project.versions, function(v) {
+          return semver(v.version).prerelease[0] || 'stable';
+        });
+        for (tagName in tagNames) {
+          majors = _.groupBy(tagNames[tagName], function(v) {
+            return semver(v.version).major;
+          });
+          for (majorName in majors) {
+            biggest = majors[majorName].sort(function(a, b) {
+              return semver.rcompare(a.version, b.version);
+            })[0];
+            tags = this.updateTags(tags, projectName, biggest.version, tagName);
+          }
         }
-      });
-      req.end(registryIndexJSON);
-      return deferred.promise;
+      }
+      return tags;
     };
 
     /*
-    Returns a buffer with the index contents. You should JSON.parse() it.
+    Uploads a registry object to s3
     */
 
 
-    VersionMap.prototype.downloadRegistryIndex = function() {
-      var deferred, req, timeoutCallback, timeoutMillis,
-        _this = this;
-      deferred = Q.defer();
-      req = this.s3Client.get(this.registryIndexPath);
-      timeoutMillis = 1000 * 30;
-      timeoutCallback = function() {
-        req.abort();
-        return deferred.reject(new Error("Timeout exceeded when downloading registry index at " + this.registryIndexPath));
-      };
-      req.setTimeout(timeoutMillis, timeoutCallback);
-      req.on("error", function(err) {
-        return deferred.reject(err);
-      });
-      req.on("response", function(res) {
-        if (res.statusCode === 404) {
-          console.warn("No such registry index file available: " + _this.registryIndexPath + ". Creating one now.");
-          return deferred.resolve("{}");
-        } else if (res.statusCode === 200) {
-          return res.on('data', function(chunk) {
-            return deferred.resolve(chunk);
-          });
-        } else {
-          return deferred.reject(new Error("Failed to download registry index at " + _this.registryIndexPath + ". Status: " + res.statusCode));
-        }
-      });
-      req.end();
-      return deferred.promise;
-    };
-
-    VersionMap.prototype.getRegistryJSON = function() {
-      return this.downloadRegistryIndex().then(function(registryIndexBuffer) {
-        return JSON.parse(registryIndexBuffer);
-      });
-    };
-
-    VersionMap.prototype.getRegistryAsArray = function() {
-      var _this = this;
-      return this.getRegistryJSON().then(function(registryMap) {
-        return _this.registryMapToArray(registryMap);
-      });
+    VersionMap.prototype.uploadRegistry = function(registry) {
+      return utils.uploadObject(registry, this.registryPath, this.s3Client, 1000 * 30, this.dryRun);
     };
 
     /*
-    Convert a registryMap to an array of products
+    Returns a registry object.
+    */
+
+
+    VersionMap.prototype.downloadRegistry = function() {
+      return utils.downloadObject(this.registryPath, this.s3Client);
+    };
+
+    /*
+    Uploads a tags object to s3
+    */
+
+
+    VersionMap.prototype.uploadTags = function(tags) {
+      return utils.uploadObject(tags, this.tagsPath, this.s3Client, 1000 * 30, this.dryRun);
+    };
+
+    /*
+    Returns a tags object.
+    */
+
+
+    VersionMap.prototype.downloadTags = function() {
+      return utils.downloadObject(this.tagsPath, this.s3Client);
+    };
+
+    /*
+    Convert a registry map to an array of packages with registry info
     */
 
 
@@ -169,14 +176,6 @@
         }).sort(function(v1, v2) {
           return semver.rcompare(v1.version, v2.version);
         });
-        project.tagsArray = _.chain(project.tags).map(function(v, k) {
-          return {
-            tag: k,
-            version: v
-          };
-        }).sortBy(function(v) {
-          return v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c');
-        }).value();
         return project;
       }).sortBy(function(project) {
         return project.mostRecentVersionDate = (_.max(project.versions, function(version) {
@@ -186,18 +185,65 @@
     };
 
     /*
-    Updates version at the index, changing the provided tag, if any.
+    Convert a tags map to an array of packages with tags info
     */
 
 
-    VersionMap.prototype.updateVersion = function(packageJSON, tag) {
+    VersionMap.prototype.tagsMapToArray = function(tags) {
+      return _.chain(tags).map(function(projectObj, projectName) {
+        var project;
+        project = {};
+        project.name = projectName;
+        project.tagsArray = _.map(projectObj, function(tags, tagName) {
+          return {
+            tag: tagName,
+            versionsArray: _.map(tags, function(version, majorName) {
+              return {
+                major: majorName,
+                version: version
+              };
+            })
+          };
+        });
+        project.tagsArray = _.sortBy(project.tagsArray, function(v) {
+          return v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c');
+        });
+        return project;
+      }).sortBy(function(project) {
+        return project.name;
+      }).value();
+    };
+
+    /*
+    Adds version to the registry
+    */
+
+
+    VersionMap.prototype.addVersion = function(pack) {
       var _this = this;
-      return this.downloadRegistryIndex().then(function(registryIndexBuffer) {
-        var updatedRegistryIndexJSON;
-        updatedRegistryIndexJSON = _this.updateRegistryIndexJSON(registryIndexBuffer, packageJSON, tag);
-        return _this.uploadRegistryIndex(updatedRegistryIndexJSON);
+      return this.downloadRegistry().then(function(registry) {
+        var updatedRegistry;
+        updatedRegistry = _this.updateRegistry(registry, pack);
+        return _this.uploadRegistry(updatedRegistry);
       }).fail(function(err) {
-        console.log("Could not update registry index!", err);
+        console.log("Could not update registry", err);
+        return err;
+      });
+    };
+
+    /*
+    Updates tag in tags object
+    */
+
+
+    VersionMap.prototype.updateTag = function(name, version, tag) {
+      var _this = this;
+      return this.downloadTags().then(function(tags) {
+        var updatedTags;
+        updatedTags = _this.updateTags(tags, name, version, tag);
+        return _this.uploadTags(updatedTags);
+      }).fail(function(err) {
+        console.log("Could not update tags", err);
         return err;
       });
     };
