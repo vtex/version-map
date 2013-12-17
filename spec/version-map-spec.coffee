@@ -85,15 +85,12 @@ describe 'VersionMap', ->
       test: {
         stable: {
           "1": "1.0.1"
-          latest: "1.0.1"
         }
         beta: {
           "1": "1.0.1-beta"
-          latest: "1.0.1-beta"
         }
         alpha: {
           "1": "1.0.1-alpha"
-          latest: "1.0.1-alpha"
         }
         next: {
           "1": "1.0.1-beta"
@@ -134,14 +131,12 @@ describe 'VersionMap', ->
     expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.beta).toEqual({})
     expect(tags.test.stable["1"]).toEqual("1.0.2")
-    expect(tags.test.stable.latest).toEqual("1.0.2")
 
   it 'should update a tags JSON correctly', ->
     tags = vmap.updateTags(tags, pack.name, pack.version, 'beta')
     expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.2")
-    expect(tags.test.beta.latest).toEqual("1.0.2")
 
   it 'should update a registry JSON tag correctly without a complete packageJSON', ->
     virtualPackage = {name: "test", version: "2.0.0"}
@@ -161,10 +156,8 @@ describe 'VersionMap', ->
     expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.1-beta")
-    expect(tags.test.beta.latest).toEqual("1.0.1-beta")
     expect(tags.test.alpha["1"]).toEqual("1.0.1-alpha")
     expect(tags.test.alpha["2"]).toEqual("2.0.0-alpha")
-    expect(tags.test.alpha.latest).toEqual("2.0.0-alpha")
 
   it 'should update a tags JSON from a registry correctly', ->
     tags.test2 = _.extend {}, tags.test
@@ -173,10 +166,8 @@ describe 'VersionMap', ->
     expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.1-beta")
-    expect(tags.test.beta.latest).toEqual("1.0.1-beta")
     expect(tags.test2.stable["1"]).toEqual("1.0.1")
     expect(tags.test2.beta["1"]).toEqual("1.0.1-beta")
-    expect(tags.test2.beta.latest).toEqual("1.0.1-beta")
 
   it 'should throw an error when updating a registry without name', ->
     virtualPackage = {version: "2.0.0"}
@@ -245,11 +236,9 @@ describe 'VersionMap', ->
     expect(tags[0].name).toBe("test")
     expect(tags[0].tagsArray.length).toBe(4)
     expect(tags[0].tagsArray[0].tag).toBe("stable")
-    expect(tags[0].tagsArray[0].majorsArray.length).toBe(2)
+    expect(tags[0].tagsArray[0].majorsArray.length).toBe(1)
     expect(tags[0].tagsArray[0].majorsArray[0].version).toBe("1.0.1")
     expect(tags[0].tagsArray[0].majorsArray[0].major).toBe("1")
-    expect(tags[0].tagsArray[0].majorsArray[1].version).toBe("1.0.1")
-    expect(tags[0].tagsArray[0].majorsArray[1].major).toBe("latest")
 
   it 'should correctly get versionName and versionDirectory from package', ->
     virtualPackage = {name: "test", version: "2.0.0"}

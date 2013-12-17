@@ -62,7 +62,6 @@ class VersionMap
 
     major = semver(version).major
     tags[name][tag][major] = version
-    tags[name][tag].latest = version
 
     return tags
 
@@ -132,7 +131,7 @@ class VersionMap
         # Map each tag on this project (stable, next, beta, alpha) to an object on this array
         project.tagsArray = _.map projectObj, (tags, tagName) ->
           tag: tagName,
-          # Map each major on this tag (1, 2, latest) to an object on this array
+          # Map each major on this tag (1, 2, etc) to an object on this array
           majorsArray: _.map tags, (version, majorName) -> major: majorName, version: version
 
         project.tagsArray = _.sortBy(project.tagsArray, (v) ->

@@ -101,7 +101,6 @@
       }
       major = semver(version).major;
       tags[name][tag][major] = version;
-      tags[name][tag].latest = version;
       return tags;
     };
 
