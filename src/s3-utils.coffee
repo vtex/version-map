@@ -48,13 +48,16 @@ exports.downloadObject = (path, client, timeoutMillis = 1000*30) =>
     deferred.reject err
 
   req.on "response", (res) =>
+    data = undefined
     if res.statusCode is 404
       console.warn "No object found at #{path}."
       deferred.resolve {}
     else if res.statusCode is 200
       res.on 'data', (chunk) ->
+        data += chunk
+      res.on 'end', ->
         try
-          obj = JSON.parse(chunk)
+          obj = JSON.parse(data)
           deferred.resolve obj
         catch e
           console.error e
