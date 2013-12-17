@@ -55,7 +55,6 @@ class VersionMap
     # Check whether this project already exists
     unless tags[name]
       tags[name] =
-        name: name
         stable: {}
         next: {}
         beta: {}
@@ -134,7 +133,7 @@ class VersionMap
         project.tagsArray = _.map projectObj, (tags, tagName) ->
           tag: tagName,
           # Map each major on this tag (1, 2, latest) to an object on this array
-          versionsArray: _.map tags, (version, majorName) -> major: majorName, version: version
+          majorsArray: _.map tags, (version, majorName) -> major: majorName, version: version
 
         project.tagsArray = _.sortBy(project.tagsArray, (v) ->
           v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c'))

@@ -93,7 +93,6 @@
       }
       if (!tags[name]) {
         tags[name] = {
-          name: name,
           stable: {},
           next: {},
           beta: {},
@@ -197,7 +196,7 @@
         project.tagsArray = _.map(projectObj, function(tags, tagName) {
           return {
             tag: tagName,
-            versionsArray: _.map(tags, function(version, majorName) {
+            majorsArray: _.map(tags, function(version, majorName) {
               return {
                 major: majorName,
                 version: version

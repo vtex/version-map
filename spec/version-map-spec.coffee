@@ -131,12 +131,14 @@ describe 'VersionMap', ->
 
   it 'should create a tags JSON correctly', ->
     tags = vmap.updateTags({}, pack.name, pack.version, 'stable')
+    expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.beta).toEqual({})
     expect(tags.test.stable["1"]).toEqual("1.0.2")
     expect(tags.test.stable.latest).toEqual("1.0.2")
 
   it 'should update a tags JSON correctly', ->
     tags = vmap.updateTags(tags, pack.name, pack.version, 'beta')
+    expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.2")
     expect(tags.test.beta.latest).toEqual("1.0.2")
@@ -156,6 +158,7 @@ describe 'VersionMap', ->
 
   it 'should create a tags JSON from a registry correctly', ->
     tags = vmap.updateTagsFromRegistry({}, registry)
+    expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.1-beta")
     expect(tags.test.beta.latest).toEqual("1.0.1-beta")
@@ -167,6 +170,7 @@ describe 'VersionMap', ->
     tags.test2 = _.extend {}, tags.test
     tags.test = undefined
     tags = vmap.updateTagsFromRegistry(tags, registry)
+    expect(_.keys(tags.test).length).toBe(4)
     expect(tags.test.stable["1"]).toEqual("1.0.1")
     expect(tags.test.beta["1"]).toEqual("1.0.1-beta")
     expect(tags.test.beta.latest).toEqual("1.0.1-beta")
@@ -241,11 +245,11 @@ describe 'VersionMap', ->
     expect(tags[0].name).toBe("test")
     expect(tags[0].tagsArray.length).toBe(4)
     expect(tags[0].tagsArray[0].tag).toBe("stable")
-    expect(tags[0].tagsArray[0].versionsArray.length).toBe(2)
-    expect(tags[0].tagsArray[0].versionsArray[0].version).toBe("1.0.1")
-    expect(tags[0].tagsArray[0].versionsArray[0].major).toBe("1")
-    expect(tags[0].tagsArray[0].versionsArray[1].version).toBe("1.0.1")
-    expect(tags[0].tagsArray[0].versionsArray[1].major).toBe("latest")
+    expect(tags[0].tagsArray[0].majorsArray.length).toBe(2)
+    expect(tags[0].tagsArray[0].majorsArray[0].version).toBe("1.0.1")
+    expect(tags[0].tagsArray[0].majorsArray[0].major).toBe("1")
+    expect(tags[0].tagsArray[0].majorsArray[1].version).toBe("1.0.1")
+    expect(tags[0].tagsArray[0].majorsArray[1].major).toBe("latest")
 
   it 'should correctly get versionName and versionDirectory from package', ->
     virtualPackage = {name: "test", version: "2.0.0"}
