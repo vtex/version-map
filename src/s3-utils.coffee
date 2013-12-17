@@ -48,7 +48,7 @@ exports.downloadObject = (path, client, timeoutMillis = 1000*30) =>
     deferred.reject err
 
   req.on "response", (res) =>
-    data = undefined
+    data = ''
     if res.statusCode is 404
       console.warn "No object found at #{path}."
       deferred.resolve {}

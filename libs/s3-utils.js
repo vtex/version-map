@@ -69,14 +69,19 @@
       return deferred.reject(err);
     });
     req.on("response", function(res) {
+      var data;
+      data = '';
       if (res.statusCode === 404) {
         console.warn("No object found at " + path + ".");
         return deferred.resolve({});
       } else if (res.statusCode === 200) {
-        return res.on('data', function(chunk) {
+        res.on('data', function(chunk) {
+          return data += chunk;
+        });
+        return res.on('end', function() {
           var e, obj;
           try {
-            obj = JSON.parse(chunk);
+            obj = JSON.parse(data);
             return deferred.resolve(obj);
           } catch (_error) {
             e = _error;
