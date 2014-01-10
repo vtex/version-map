@@ -8,6 +8,7 @@ class VersionMap
   constructor: (options) ->
     @key = options.key
     @secret = options.secret
+    @token = options.token
     @bucket = options.bucket or 'vtex-versioned'
     @dryRun = options.dryRun
     console.log '\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n' if @dryRun
@@ -15,6 +16,7 @@ class VersionMap
       key: @key
       secret: @secret
       bucket: @bucket
+      token: @token
     @registryPath = "registry/1/registry.json"
     @tagsPath = "registry/1/tags.json"
 
