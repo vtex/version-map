@@ -30,6 +30,7 @@
       this.updateRegistry = __bind(this.updateRegistry, this);
       this.key = options.key;
       this.secret = options.secret;
+      this.token = options.token;
       this.bucket = options.bucket || 'vtex-versioned';
       this.dryRun = options.dryRun;
       if (this.dryRun) {
@@ -38,7 +39,8 @@
       this.s3Client = knox.createClient({
         key: this.key,
         secret: this.secret,
-        bucket: this.bucket
+        bucket: this.bucket,
+        token: this.token
       });
       this.registryPath = "registry/1/registry.json";
       this.tagsPath = "registry/1/tags.json";
