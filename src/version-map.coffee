@@ -115,49 +115,6 @@ class VersionMap
     utils.downloadObject(@tagsPath, @s3Client)
 
   ###
-  Convert a registry map to an array of packages with registry info
-  ###
-  registryMapToArray: (registry) =>
-    _.chain(registry)
-      # Create an array with each product's object value
-      .map((project) ->
-        project.versionsArray = _.map(project.versions, (v) -> v).sort((v1, v2) -> semver.rcompare(v1.version, v2.version))
-        project
-      )
-      # Sort By most recent version in each project, and insert this information in the project object
-      .sortBy((project) -> project.mostRecentVersionDate = (_.max(project.versions, (version) ->  new Date(version.created)).created))
-      # Extract value from chain
-      .value()
-      # In descending order
-      .reverse()
-
-  ###
-  Convert a tags map to an array of packages with tags info
-  ###
-  tagsMapToArray: (tags) =>
-    _.chain(tags)
-      # Create an array with each product's object value
-      .map((projectObj, projectName) ->
-        project = {}
-        project.name = projectName
-
-        # Map each tag on this project (stable, next, beta, alpha) to an object on this array
-        project.tagsArray = _.map projectObj, (tags, tagName) ->
-          tag: tagName,
-          # Map each major on this tag (1, 2, etc) to an object on this array
-          majorsArray: _.map tags, (version, majorName) -> major: majorName, version: version
-
-        project.tagsArray = _.sortBy(project.tagsArray, (v) ->
-          v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c'))
-
-        return project
-      )
-      # Sort by name
-      .sortBy((project) -> project.name)
-      # Extract value from chain
-      .value()
-
-  ###
   Adds version to the registry
   ###
   addVersion: (pack) =>
@@ -191,15 +148,9 @@ class VersionMap
       err
 
   ###
-  Returns the version name for the given package
-  ###
-  versionName: (packageObj) ->
-    packageObj.version
-
-  ###
   Returns the version directory for the given package
   ###
   versionDirectory: (packageObj) =>
-    packageObj.name + "/" +  @versionName(packageObj)
+    packageObj.name + "/" +  packageObj.version
 
 module.exports = VersionMap

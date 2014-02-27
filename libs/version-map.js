@@ -18,8 +18,6 @@
       this.removeMajor = __bind(this.removeMajor, this);
       this.updateTag = __bind(this.updateTag, this);
       this.addVersion = __bind(this.addVersion, this);
-      this.tagsMapToArray = __bind(this.tagsMapToArray, this);
-      this.registryMapToArray = __bind(this.registryMapToArray, this);
       this.downloadTags = __bind(this.downloadTags, this);
       this.uploadTags = __bind(this.uploadTags, this);
       this.downloadRegistry = __bind(this.downloadRegistry, this);
@@ -184,56 +182,6 @@
     };
 
     /*
-    Convert a registry map to an array of packages with registry info
-    */
-
-
-    VersionMap.prototype.registryMapToArray = function(registry) {
-      return _.chain(registry).map(function(project) {
-        project.versionsArray = _.map(project.versions, function(v) {
-          return v;
-        }).sort(function(v1, v2) {
-          return semver.rcompare(v1.version, v2.version);
-        });
-        return project;
-      }).sortBy(function(project) {
-        return project.mostRecentVersionDate = (_.max(project.versions, function(version) {
-          return new Date(version.created);
-        }).created);
-      }).value().reverse();
-    };
-
-    /*
-    Convert a tags map to an array of packages with tags info
-    */
-
-
-    VersionMap.prototype.tagsMapToArray = function(tags) {
-      return _.chain(tags).map(function(projectObj, projectName) {
-        var project;
-        project = {};
-        project.name = projectName;
-        project.tagsArray = _.map(projectObj, function(tags, tagName) {
-          return {
-            tag: tagName,
-            majorsArray: _.map(tags, function(version, majorName) {
-              return {
-                major: majorName,
-                version: version
-              };
-            })
-          };
-        });
-        project.tagsArray = _.sortBy(project.tagsArray, function(v) {
-          return v.tag.replace('stable', 'a').replace('next', 'ab').replace('beta', 'b').replace('alpha', 'c');
-        });
-        return project;
-      }).sortBy(function(project) {
-        return project.name;
-      }).value();
-    };
-
-    /*
     Adds version to the registry
     */
 
@@ -285,21 +233,12 @@
     };
 
     /*
-    Returns the version name for the given package
-    */
-
-
-    VersionMap.prototype.versionName = function(packageObj) {
-      return packageObj.version;
-    };
-
-    /*
     Returns the version directory for the given package
     */
 
 
     VersionMap.prototype.versionDirectory = function(packageObj) {
-      return packageObj.name + "/" + this.versionName(packageObj);
+      return packageObj.name + "/" + packageObj.version;
     };
 
     return VersionMap;

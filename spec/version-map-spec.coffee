@@ -234,26 +234,4 @@ describe 'VersionMap', ->
       expect(response).toBe(tags)
       # TODO fix async running of this promise
       expect(false).toBe(true)
-
-  it 'should transform a registry map to array', ->
-    registryArray = vmap.registryMapToArray(registry)
-    expect(registryArray.length).toBe(1)
-    expect(registryArray[0].name).toBe("test")
-    expect(registryArray[0].versionsArray.length).toBe(7)
-    expect(registryArray[0].versionsArray[0].version).toBe("2.0.0-alpha")
-    expect(registryArray[0].mostRecentVersionDate).toBe("2013-12-23T12:00:00.000Z")
-
-  it 'should transform a tags map to array', ->
-    tags = vmap.tagsMapToArray(tags)
-    expect(tags.length).toBe(1)
-    expect(tags[0].name).toBe("test")
-    expect(tags[0].tagsArray.length).toBe(4)
-    expect(tags[0].tagsArray[0].tag).toBe("stable")
-    expect(tags[0].tagsArray[0].majorsArray.length).toBe(1)
-    expect(tags[0].tagsArray[0].majorsArray[0].version).toBe("1.0.1")
-    expect(tags[0].tagsArray[0].majorsArray[0].major).toBe("1")
-
-  it 'should correctly get versionName and versionDirectory from package', ->
-    virtualPackage = {name: "test", version: "2.0.0"}
-    expect(vmap.versionName(virtualPackage)).toBe("2.0.0")
-    expect(vmap.versionDirectory(virtualPackage)).toBe("test/2.0.0")
+gr
