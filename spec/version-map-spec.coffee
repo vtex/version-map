@@ -234,4 +234,3 @@ describe 'VersionMap', ->
       expect(response).toBe(tags)
       # TODO fix async running of this promise
       expect(false).toBe(true)
-gr
