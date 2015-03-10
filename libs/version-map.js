@@ -42,6 +42,7 @@
       });
       this.registryPath = "registry/1/registry.json";
       this.tagsPath = "registry/1/tags.json";
+      this.newTagsPath = "tags/1/tags.json";
     }
 
     VersionMap.prototype.updateRegistry = function(registry, pkg) {
@@ -169,7 +170,8 @@
 
 
     VersionMap.prototype.uploadTags = function(tags) {
-      return utils.uploadObject(tags, this.tagsPath, this.s3Client, 1000 * 30, this.dryRun);
+      utils.uploadObject(tags, this.tagsPath, this.s3Client, 1000 * 30, this.dryRun);
+      return utils.uploadObject(tags, this.newTagsPath, this.s3Client, 1000 * 30, this.dryRun);
     };
 
     /*

@@ -19,6 +19,7 @@ class VersionMap
       token: @token
     @registryPath = "registry/1/registry.json"
     @tagsPath = "registry/1/tags.json"
+    @newTagsPath = "tags/1/tags.json" #TODO replace tagsPath once Janus uses new version
 
   # Updates the registry with the pkg package informations
   # Package has two required properties: name and version
@@ -107,6 +108,7 @@ class VersionMap
   ###
   uploadTags: (tags) =>
     utils.uploadObject(tags, @tagsPath, @s3Client, 1000*30, @dryRun)
+    utils.uploadObject(tags, @newTagsPath, @s3Client, 1000*30, @dryRun) #TODO remove once Janus uses new version
 
   ###
   Returns a tags object.
