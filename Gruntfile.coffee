@@ -39,7 +39,7 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'test', ->
     done = @async()
-    cmd = spawn('./node_modules/jasmine-node/bin/jasmine-node', ['--coffee', 'spec/'])
+    cmd = spawn('./node_modules/jasmine-node/bin/jasmine-node', ['--coffee', '--verbose', '--color','spec/'])
     write = (data) ->
       process.stdout.write data.toString()
     cmd.stdout.on "data", write
