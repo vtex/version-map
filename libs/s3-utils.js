@@ -13,7 +13,7 @@
   */
 
 
-  exports.uploadObject = function(obj, client, bucket, path, dryRun) {
+  exports.putObject = function(obj, client, bucket, path, dryRun) {
     var json, params;
     if (dryRun == null) {
       dryRun = false;
@@ -37,7 +37,7 @@
   */
 
 
-  exports.downloadObject = function(client, bucket, path) {
+  exports.getObject = function(client, bucket, path) {
     return Q.ninvoke(client, "getObject", {
       Bucket: bucket,
       Key: path

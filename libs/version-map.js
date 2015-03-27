@@ -144,7 +144,7 @@
 
 
     VersionMap.prototype.uploadRegistry = function(registry) {
-      return utils.uploadObject(registry, this.s3Client, this.bucket, this.registryPath, this.dryRun);
+      return utils.putObject(registry, this.s3Client, this.bucket, this.registryPath, this.dryRun);
     };
 
     /*
@@ -153,7 +153,7 @@
 
 
     VersionMap.prototype.downloadRegistry = function() {
-      return utils.downloadObject(this.s3Client, this.bucket, this.registryPath);
+      return utils.getObject(this.s3Client, this.bucket, this.registryPath);
     };
 
     /*
@@ -162,8 +162,8 @@
 
 
     VersionMap.prototype.uploadTags = function(tags) {
-      utils.uploadObject(tags, this.s3Client, this.bucket, this.tagsPath, this.dryRun);
-      return utils.uploadObject(tags, this.s3Client, this.bucket, this.newTagsPath, this.dryRun);
+      utils.putObject(tags, this.s3Client, this.bucket, this.tagsPath, this.dryRun);
+      return utils.putObject(tags, this.s3Client, this.bucket, this.newTagsPath, this.dryRun);
     };
 
     /*
@@ -172,7 +172,7 @@
 
 
     VersionMap.prototype.downloadTags = function() {
-      return utils.downloadObject(this.s3Client, this.bucket, this.tagsPath);
+      return utils.getObject(this.s3Client, this.bucket, this.tagsPath);
     };
 
     /*

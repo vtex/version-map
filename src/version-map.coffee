@@ -87,24 +87,24 @@ class VersionMap
   ###
   Uploads a registry object to s3
   ###
-  uploadRegistry: (registry) => utils.uploadObject(registry, @s3Client, @bucket, @registryPath, @dryRun)
+  uploadRegistry: (registry) => utils.putObject(registry, @s3Client, @bucket, @registryPath, @dryRun)
 
   ###
   Returns a registry object.
   ###
-  downloadRegistry: => utils.downloadObject(@s3Client, @bucket, @registryPath)
+  downloadRegistry: => utils.getObject(@s3Client, @bucket, @registryPath)
 
   ###
   Uploads a tags object to s3
   ###
   uploadTags: (tags) =>
-    utils.uploadObject(tags, @s3Client, @bucket, @tagsPath, @dryRun)
-    utils.uploadObject(tags, @s3Client, @bucket, @newTagsPath, @dryRun) #TODO remove once Janus uses new version
+    utils.putObject(tags, @s3Client, @bucket, @tagsPath, @dryRun)
+    utils.putObject(tags, @s3Client, @bucket, @newTagsPath, @dryRun) #TODO remove once Janus uses new version
 
   ###
   Returns a tags object.
   ###
-  downloadTags: => utils.downloadObject(@s3Client, @bucket, @tagsPath)
+  downloadTags: => utils.getObject(@s3Client, @bucket, @tagsPath)
 
   ###
   Adds version to the registry

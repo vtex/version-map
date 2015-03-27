@@ -6,7 +6,7 @@ parseData = (data) -> JSON.parse data.Body
 ###
 Uploads a object to s3
 ###
-exports.uploadObject = (obj, client, bucket, path, dryRun = false) =>
+exports.putObject = (obj, client, bucket, path, dryRun = false) =>
   json = JSON.stringify(obj)
   if dryRun
     console.log '\nWARNING: Running in dry run mode. No upload was actually made.\n'
@@ -23,5 +23,5 @@ exports.uploadObject = (obj, client, bucket, path, dryRun = false) =>
 ###
 Returns a object from s3. If none is found at this path, an empty object is returned.
 ###
-exports.downloadObject = (client, bucket, path) =>
+exports.getObject = (client, bucket, path) =>
   Q.ninvoke(client, "getObject", { Bucket: bucket, Key: path }).then parseData
