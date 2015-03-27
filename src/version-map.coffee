@@ -1,4 +1,4 @@
-knox = require 'knox'
+AWS = require 'aws-sdk'
 Q = require 'q'
 _ = require 'underscore'
 semver = require 'semver'
@@ -6,17 +6,10 @@ utils = require './s3-utils'
 
 class VersionMap
   constructor: (options) ->
-    @key = options.key
-    @secret = options.secret
-    @token = options.token
+    @s3Client = new AWS.S3()
     @bucket = options.bucket or 'vtex-versioned'
     @dryRun = options.dryRun
     console.log '\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n' if @dryRun
-    @s3Client = knox.createClient
-      key: @key
-      secret: @secret
-      bucket: @bucket
-      token: @token
     @registryPath = "registry/1/registry.json"
     @tagsPath = "registry/1/tags.json"
     @newTagsPath = "tags/1/tags.json" #TODO replace tagsPath once Janus uses new version
@@ -94,27 +87,24 @@ class VersionMap
   ###
   Uploads a registry object to s3
   ###
-  uploadRegistry: (registry) =>
-    utils.uploadObject(registry, @registryPath, @s3Client, 1000*30, @dryRun)
+  uploadRegistry: (registry) => utils.uploadObject(registry, @s3Client, @bucket, @registryPath, @dryRun)
 
   ###
   Returns a registry object.
   ###
-  downloadRegistry: =>
-    utils.downloadObject(@registryPath, @s3Client)
+  downloadRegistry: => utils.downloadObject(@s3Client, @bucket, @registryPath)
 
   ###
   Uploads a tags object to s3
   ###
   uploadTags: (tags) =>
-    utils.uploadObject(tags, @tagsPath, @s3Client, 1000*30, @dryRun)
-    utils.uploadObject(tags, @newTagsPath, @s3Client, 1000*30, @dryRun) #TODO remove once Janus uses new version
+    utils.uploadObject(tags, @s3Client, @bucket, @tagsPath, @dryRun)
+    utils.uploadObject(tags, @s3Client, @bucket, @newTagsPath, @dryRun) #TODO remove once Janus uses new version
 
   ###
   Returns a tags object.
   ###
-  downloadTags: =>
-    utils.downloadObject(@tagsPath, @s3Client)
+  downloadTags: => utils.downloadObject(@s3Client, @bucket, @tagsPath)
 
   ###
   Adds version to the registry

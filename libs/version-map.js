@@ -1,8 +1,8 @@
 (function() {
-  var Q, VersionMap, knox, semver, utils, _,
+  var AWS, Q, VersionMap, semver, utils, _,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  knox = require('knox');
+  AWS = require('aws-sdk');
 
   Q = require('q');
 
@@ -26,20 +26,12 @@
       this.removeMajorFromTags = __bind(this.removeMajorFromTags, this);
       this.updateTags = __bind(this.updateTags, this);
       this.updateRegistry = __bind(this.updateRegistry, this);
-      this.key = options.key;
-      this.secret = options.secret;
-      this.token = options.token;
+      this.s3Client = new AWS.S3();
       this.bucket = options.bucket || 'vtex-versioned';
       this.dryRun = options.dryRun;
       if (this.dryRun) {
         console.log('\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n');
       }
-      this.s3Client = knox.createClient({
-        key: this.key,
-        secret: this.secret,
-        bucket: this.bucket,
-        token: this.token
-      });
       this.registryPath = "registry/1/registry.json";
       this.tagsPath = "registry/1/tags.json";
       this.newTagsPath = "tags/1/tags.json";
@@ -152,7 +144,7 @@
 
 
     VersionMap.prototype.uploadRegistry = function(registry) {
-      return utils.uploadObject(registry, this.registryPath, this.s3Client, 1000 * 30, this.dryRun);
+      return utils.uploadObject(registry, this.s3Client, this.bucket, this.registryPath, this.dryRun);
     };
 
     /*
@@ -161,7 +153,7 @@
 
 
     VersionMap.prototype.downloadRegistry = function() {
-      return utils.downloadObject(this.registryPath, this.s3Client);
+      return utils.downloadObject(this.s3Client, this.bucket, this.registryPath);
     };
 
     /*
@@ -170,8 +162,8 @@
 
 
     VersionMap.prototype.uploadTags = function(tags) {
-      utils.uploadObject(tags, this.tagsPath, this.s3Client, 1000 * 30, this.dryRun);
-      return utils.uploadObject(tags, this.newTagsPath, this.s3Client, 1000 * 30, this.dryRun);
+      utils.uploadObject(tags, this.s3Client, this.bucket, this.tagsPath, this.dryRun);
+      return utils.uploadObject(tags, this.s3Client, this.bucket, this.newTagsPath, this.dryRun);
     };
 
     /*
@@ -180,7 +172,7 @@
 
 
     VersionMap.prototype.downloadTags = function() {
-      return utils.downloadObject(this.tagsPath, this.s3Client);
+      return utils.downloadObject(this.s3Client, this.bucket, this.tagsPath);
     };
 
     /*

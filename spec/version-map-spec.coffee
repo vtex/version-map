@@ -102,8 +102,6 @@ describe 'VersionMap', ->
     expect(VersionMap).toBeDefined()
 
   it 'should have defined properties', ->
-    expect(vmap.key).toBe(options.key)
-    expect(vmap.secret).toBe(options.secret)
     expect(vmap.bucket).toBe(options.bucket)
     expect(vmap.s3Client).toBeDefined()
     expect(vmap.registryPath).toBeDefined()
