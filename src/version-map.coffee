@@ -10,9 +10,9 @@ class VersionMap
     @bucket = options.bucket or 'vtex-versioned'
     @dryRun = options.dryRun
     console.log '\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n' if @dryRun
-    @registryPath = "registry/1/registry.json"
+    @registryPath = "registry/v2/registry.json"
     @tagsPath = "registry/1/tags.json"
-    @newTagsPath = "tags/1/tags.json" #TODO replace tagsPath once Janus uses new version
+    @newTagsPath = "tags/v2/tags.json" #TODO replace tagsPath once Janus uses new version
 
   # Updates the registry with the pkg package informations
   # Package has two required properties: name and version
