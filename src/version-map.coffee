@@ -11,8 +11,7 @@ class VersionMap
     @dryRun = options.dryRun
     console.log '\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n' if @dryRun
     @registryPath = "registry/v2/registry.json"
-    @tagsPath = "registry/1/tags.json"
-    @newTagsPath = "tags/v2/tags.json" #TODO replace tagsPath once Janus uses new version
+    @tagsPath = "tags/v2/tags.json"
 
   # Updates the registry with the pkg package informations
   # Package has two required properties: name and version
@@ -99,7 +98,6 @@ class VersionMap
   ###
   uploadTags: (tags) =>
     utils.putObject(tags, @s3Client, @bucket, @tagsPath, @dryRun)
-    utils.putObject(tags, @s3Client, @bucket, @newTagsPath, @dryRun) #TODO remove once Janus uses new version
 
   ###
   Returns a tags object.

@@ -33,8 +33,7 @@
         console.log('\nWARNING: VersionMap running in dry run mode. No changes will actually be made.\n');
       }
       this.registryPath = "registry/v2/registry.json";
-      this.tagsPath = "registry/1/tags.json";
-      this.newTagsPath = "tags/v2/tags.json";
+      this.tagsPath = "tags/v2/tags.json";
     }
 
     VersionMap.prototype.updateRegistry = function(registry, pkg) {
@@ -162,8 +161,7 @@
 
 
     VersionMap.prototype.uploadTags = function(tags) {
-      utils.putObject(tags, this.s3Client, this.bucket, this.tagsPath, this.dryRun);
-      return utils.putObject(tags, this.s3Client, this.bucket, this.newTagsPath, this.dryRun);
+      return utils.putObject(tags, this.s3Client, this.bucket, this.tagsPath, this.dryRun);
     };
 
     /*
